@@ -229,7 +229,11 @@ export function AppShell({ initialData }: AppShellProps) {
                 <p className="text-sm font-semibold text-primary">Individual TM.7 MVP</p>
                 <h2 className="mt-1 text-3xl font-bold tracking-normal">Create, review, and export a TM.7 packet</h2>
                 <p className="mt-2 max-w-2xl text-sm text-muted">
-                  TM.7 is the Thai immigration form for extending a temporary stay, including a 30-day visa extension.
+                  TM.7 is the Thai immigration form for extending a temporary stay, including a{" "}
+                  <span className="rounded-sm bg-accent-soft px-1.5 py-0.5 font-semibold text-accent">
+                    30-day visa extension
+                  </span>
+                  .
                 </p>
               </div>
               <div className="rounded-md border border-line bg-background px-4 py-3 text-sm">
