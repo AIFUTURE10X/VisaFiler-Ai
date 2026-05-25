@@ -58,6 +58,7 @@ const profileFields: Array<{
   placeholder?: string;
 }> = [
   { label: "First name", key: "legalFirstName", placeholder: "Alex" },
+  { label: "Middle name", key: "legalMiddleName", placeholder: "Optional middle name" },
   { label: "Family name", key: "legalFamilyName", placeholder: "Morgan" },
   { label: "Nationality", key: "nationality", placeholder: "Canadian" },
   { label: "Date of birth", key: "dateOfBirth", type: "date" },

@@ -12,6 +12,7 @@ test("creates and approves a TM.7 packet", async ({ page }) => {
   await expect(page.getByRole("heading", { name: "TM.7 packet workflow" })).toBeVisible();
 
   await page.getByLabel("First name").fill("Alex");
+  await page.getByLabel("Middle name").fill("M");
   await page.getByLabel("Family name").fill("Morgan");
   await page.getByLabel("Nationality").fill("Canadian");
   await page.getByLabel("Date of birth").fill("1980-05-10");
