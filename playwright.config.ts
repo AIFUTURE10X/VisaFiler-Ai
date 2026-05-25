@@ -7,13 +7,16 @@ export default defineConfig({
     timeout: 5_000
   },
   webServer: {
-    command: "pnpm dev",
-    url: "http://127.0.0.1:3000",
-    reuseExistingServer: !process.env.CI,
+    command: "pnpm exec next dev -p 3100",
+    url: "http://127.0.0.1:3100",
+    reuseExistingServer: false,
+    env: {
+      VISADESK_DATA_DIR: ".visadesk-data-e2e"
+    },
     timeout: 120_000
   },
   use: {
-    baseURL: "http://127.0.0.1:3000",
+    baseURL: "http://127.0.0.1:3100",
     trace: "on-first-retry"
   },
   projects: [

@@ -1,4 +1,9 @@
+import { rm } from "node:fs/promises";
 import { expect, test } from "@playwright/test";
+
+test.beforeEach(async () => {
+  await rm(".visadesk-data-e2e", { recursive: true, force: true });
+});
 
 test("creates and approves a TM.7 packet", async ({ page }) => {
   await page.goto("/");

@@ -5,7 +5,7 @@ import { emptyAppData, type AppData } from "./types";
 export class LocalStore {
   private readonly filePath: string;
 
-  constructor(private readonly dataDir = path.join(process.cwd(), ".visadesk-data")) {
+  constructor(private readonly dataDir = getDataDir()) {
     this.filePath = path.join(dataDir, "store.json");
   }
 
@@ -39,6 +39,9 @@ export class LocalStore {
   }
 }
 
-export const getDataDir = () => path.join(process.cwd(), ".visadesk-data");
+export const getDataDir = () =>
+  process.env.VISADESK_DATA_DIR
+    ? path.resolve(process.cwd(), process.env.VISADESK_DATA_DIR)
+    : path.join(process.cwd(), ".visadesk-data");
 export const getUploadsDir = () => path.join(getDataDir(), "uploads");
 export const getGeneratedDir = () => path.join(getDataDir(), "generated");
