@@ -2,11 +2,19 @@ import { mkdtemp, rm } from "node:fs/promises";
 import path from "node:path";
 import { tmpdir } from "node:os";
 import { afterEach, describe, expect, test } from "vitest";
-import { LocalStore } from "./local-store";
+import { getDataDir, LocalStore } from "./local-store";
 
 let tempDirs: string[] = [];
+const previousVercel = process.env.VERCEL;
 
 afterEach(async () => {
+  if (previousVercel === undefined) {
+    delete process.env.VERCEL;
+  } else {
+    process.env.VERCEL = previousVercel;
+  }
+  delete process.env.VISAFILER_DATA_DIR;
+  delete process.env.VISADESK_DATA_DIR;
   await Promise.all(tempDirs.map((dir) => rm(dir, { recursive: true, force: true })));
   tempDirs = [];
 });
@@ -40,5 +48,11 @@ describe("LocalStore", () => {
       id: "profile_1",
       legalFirstName: "Alex"
     });
+  });
+
+  test("uses writable temporary storage on Vercel", () => {
+    process.env.VERCEL = "1";
+
+    expect(getDataDir()).toBe(path.join(tmpdir(), "visafiler-data"));
   });
 });

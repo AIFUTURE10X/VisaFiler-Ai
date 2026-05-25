@@ -1,5 +1,6 @@
 import { existsSync } from "node:fs";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
 import path from "node:path";
 import { emptyAppData, type AppData } from "./types";
 
@@ -45,6 +46,8 @@ export const getDataDir = () =>
     ? path.resolve(process.cwd(), process.env.VISAFILER_DATA_DIR)
     : process.env.VISADESK_DATA_DIR
       ? path.resolve(process.cwd(), process.env.VISADESK_DATA_DIR)
+      : process.env.VERCEL
+        ? path.join(tmpdir(), "visafiler-data")
       : getDefaultDataDir();
 export const getUploadsDir = () => path.join(getDataDir(), "uploads");
 export const getGeneratedDir = () => path.join(getDataDir(), "generated");
