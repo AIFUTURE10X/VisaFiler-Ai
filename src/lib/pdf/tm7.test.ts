@@ -85,6 +85,21 @@ describe("TM.7 PDF generation", () => {
     expect(findItem(items, "Lagoon Road", 2)).toMatchObject({ page: 2, x: 248, y: 678 });
     expect(findItem(items, "Phuket", 2)).toMatchObject({ page: 2, x: 340, y: 640 });
   });
+
+  test("uses western Gregorian years in the printable date fields", async () => {
+    const dir = await mkdtemp(path.join(tmpdir(), "visadesk-pdf-"));
+    tempDirs.push(dir);
+
+    const result = await generateTm7Pdf({ profile, workflow, outputDir: dir });
+    const items = await extractPdfTextPositions(result.bytes);
+
+    expect(findItemAt(items, "2026", 1, 506, 660)).toBeDefined();
+    expect(findItemAt(items, "1980", 1, 516, 539)).toBeDefined();
+    expect(findItemAt(items, "2024", 1, 210, 436)).toBeDefined();
+    expect(findItemAt(items, "2034", 1, 210, 402)).toBeDefined();
+    expect(findItemAt(items, "2026", 1, 508, 333)).toBeDefined();
+    expect(items.some((item) => item.str === "2569" || item.str === "2523")).toBe(false);
+  });
 });
 
 interface TextPosition {
@@ -132,4 +147,14 @@ async function extractPdfTextPositions(bytes: Uint8Array): Promise<TextPosition[
 
 function findItem(items: TextPosition[], str: string, page: number): TextPosition | undefined {
   return items.find((item) => item.page === page && item.str === str);
+}
+
+function findItemAt(
+  items: TextPosition[],
+  str: string,
+  page: number,
+  x: number,
+  y: number
+): TextPosition | undefined {
+  return items.find((item) => item.page === page && item.str === str && item.x === x && item.y === y);
 }

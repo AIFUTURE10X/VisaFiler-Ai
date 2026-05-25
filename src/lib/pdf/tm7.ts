@@ -68,7 +68,7 @@ export async function generateTm7Pdf({
   draw(page, workflow.writtenAt, 425, 703);
   draw(page, applicationDate.day, 344, 660);
   draw(page, applicationDate.month, 385, 660);
-  draw(page, applicationDate.buddhistYear, 506, 660);
+  draw(page, applicationDate.year, 506, 660);
 
   draw(page, profile.legalFamilyName, 250, 573);
   draw(page, profile.legalFirstName, 424, 573);
@@ -76,18 +76,18 @@ export async function generateTm7Pdf({
   draw(page, calculateAge(profile.dateOfBirth), 282, 539);
   draw(page, dateOfBirth.day, 367, 539);
   draw(page, dateOfBirth.month, 427, 539);
-  draw(page, dateOfBirth.buddhistYear, 516, 539);
+  draw(page, dateOfBirth.year, 516, 539);
 
   draw(page, profile.placeOfBirth, 120, 504);
   draw(page, profile.nationality, 440, 504);
   draw(page, profile.passportNumber, 292, 470);
   draw(page, passportIssueDate.day, 476, 470);
   draw(page, passportIssueDate.month, 100, 436);
-  draw(page, passportIssueDate.buddhistYear, 210, 436);
+  draw(page, passportIssueDate.year, 210, 436);
   draw(page, profile.passportIssuedAt, 282, 436);
   draw(page, passportExpiryDate.day, 476, 436);
   draw(page, passportExpiryDate.month, 100, 402);
-  draw(page, passportExpiryDate.buddhistYear, 210, 402);
+  draw(page, passportExpiryDate.year, 210, 402);
   draw(page, profile.visaType, 310, 402);
 
   draw(page, profile.arrivedBy, 156, 367);
@@ -95,7 +95,7 @@ export async function generateTm7Pdf({
   draw(page, profile.portOfArrival, 130, 333);
   draw(page, arrivalDate.day, 335, 333);
   draw(page, arrivalDate.month, 397, 333);
-  draw(page, arrivalDate.buddhistYear, 508, 333);
+  draw(page, arrivalDate.year, 508, 333);
   draw(page, profile.tm6Number, 250, 299);
   draw(page, workflow.requestedExtensionDays, 426, 265);
   draw(page, workflow.extensionReason, 140, 229);
@@ -154,16 +154,15 @@ function composeThailandAddress(profile: ClientProfile): string {
 
 function splitIsoDate(value?: string) {
   if (!value) {
-    return { day: undefined, month: undefined, buddhistYear: undefined };
+    return { day: undefined, month: undefined, year: undefined };
   }
 
   const [year, month, day] = value.split("-");
-  const numericYear = Number(year);
 
   return {
     day,
     month,
-    buddhistYear: Number.isFinite(numericYear) ? String(numericYear + 543) : year
+    year
   };
 }
 
