@@ -81,4 +81,33 @@ describe("TM.7 readiness", () => {
       }
     ]);
   });
+
+  test("requires the profile fields printed on the official TM.7 form", () => {
+    const missingProfile: ClientProfile = {
+      ...completeProfile,
+      dateOfBirth: "",
+      placeOfBirth: "",
+      passportIssueDate: "",
+      visaType: "",
+      arrivedBy: "",
+      arrivalFrom: "",
+      thaiAddressNumber: "",
+      road: "",
+      subDistrict: "",
+      district: ""
+    };
+
+    expect(getTm7MissingFields(missingProfile, completeWorkflow).map((field) => field.key)).toEqual([
+      "dateOfBirth",
+      "placeOfBirth",
+      "passportIssueDate",
+      "visaType",
+      "arrivedBy",
+      "arrivalFrom",
+      "thaiAddressNumber",
+      "road",
+      "subDistrict",
+      "district"
+    ]);
+  });
 });

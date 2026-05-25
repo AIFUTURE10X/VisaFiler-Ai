@@ -27,10 +27,28 @@ const profileFields: FieldDefinition[] = [
     explanation: "The passport nationality used for this application."
   },
   {
+    key: "dateOfBirth",
+    label: "Date of birth",
+    source: "profile",
+    explanation: "The applicant's date of birth as shown on the passport."
+  },
+  {
+    key: "placeOfBirth",
+    label: "Place of birth",
+    source: "profile",
+    explanation: "The applicant's place of birth as shown on the passport."
+  },
+  {
     key: "passportNumber",
     label: "Passport number",
     source: "profile",
     explanation: "The passport number used for the current Thailand stay."
+  },
+  {
+    key: "passportIssueDate",
+    label: "Passport issue date",
+    source: "profile",
+    explanation: "The passport issue date shown on the passport identity page."
   },
   {
     key: "passportIssuedAt",
@@ -51,16 +69,52 @@ const profileFields: FieldDefinition[] = [
     explanation: "The latest date of entry into Thailand for this stay."
   },
   {
+    key: "visaType",
+    label: "Type of visa",
+    source: "profile",
+    explanation: "The visa type used for the current Thailand stay."
+  },
+  {
+    key: "arrivedBy",
+    label: "Arrived by",
+    source: "profile",
+    explanation: "The type of transportation used to enter Thailand, such as air, land, or sea."
+  },
+  {
+    key: "arrivalFrom",
+    label: "Arrived from",
+    source: "profile",
+    explanation: "The country or city the applicant arrived from on the latest Thailand entry."
+  },
+  {
     key: "portOfArrival",
     label: "Port of arrival",
     source: "profile",
     explanation: "The airport, land border, or seaport used for the latest Thailand entry."
   },
   {
-    key: "thaiAddressLine",
-    label: "Thailand address",
+    key: "thaiAddressNumber",
+    label: "Address number",
     source: "profile",
-    explanation: "The current address in Thailand used for immigration paperwork."
+    explanation: "The house, condo, or room number for the current Thailand address."
+  },
+  {
+    key: "road",
+    label: "Road",
+    source: "profile",
+    explanation: "The road or street for the current Thailand address."
+  },
+  {
+    key: "subDistrict",
+    label: "Subdistrict",
+    source: "profile",
+    explanation: "The tambon or khwaeng for the current Thailand address."
+  },
+  {
+    key: "district",
+    label: "District",
+    source: "profile",
+    explanation: "The amphoe or khet for the current Thailand address."
   },
   {
     key: "province",

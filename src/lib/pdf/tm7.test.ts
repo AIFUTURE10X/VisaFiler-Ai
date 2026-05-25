@@ -76,6 +76,11 @@ describe("TM.7 PDF generation", () => {
     expect(findItem(items, "AB123456", 1)).toMatchObject({ page: 1, x: 292, y: 470 });
     expect(findItem(items, "Suvarnabhumi Airport", 1)).toMatchObject({ page: 1, x: 130, y: 333 });
     expect(findItem(items, "365", 1)).toMatchObject({ page: 1, x: 426, y: 265 });
+    expect(findItem(items, "88/12, Lagoon Road, Choeng Thale, Thalang, Phuket, 83110", 2)).toMatchObject({
+      page: 2,
+      x: 168,
+      y: 754
+    });
     expect(findItem(items, "88/12", 2)).toMatchObject({ page: 2, x: 125, y: 678 });
     expect(findItem(items, "Lagoon Road", 2)).toMatchObject({ page: 2, x: 248, y: 678 });
     expect(findItem(items, "Phuket", 2)).toMatchObject({ page: 2, x: 340, y: 640 });

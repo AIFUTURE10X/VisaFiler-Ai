@@ -100,6 +100,7 @@ export async function generateTm7Pdf({
   draw(page, workflow.requestedExtensionDays, 426, 265);
   draw(page, workflow.extensionReason, 140, 229);
 
+  draw(addressPage, composeThailandAddress(profile), 168, 754);
   draw(addressPage, fullName(profile), 250, 716);
   draw(addressPage, profile.thaiAddressNumber, 125, 678);
   draw(addressPage, profile.road || profile.thaiAddressLine, 248, 678);
@@ -129,6 +130,26 @@ export async function generateTm7Pdf({
 async function readTemplateBytes(): Promise<Uint8Array> {
   const { readFile } = await import("node:fs/promises");
   return readFile(templatePath());
+}
+
+function composeThailandAddress(profile: ClientProfile): string {
+  const hasStructuredAddress = Boolean(
+    profile.thaiAddressNumber || profile.road || profile.subDistrict || profile.district
+  );
+  const parts = hasStructuredAddress
+    ? [
+        profile.thaiAddressNumber,
+        profile.road,
+        profile.subDistrict,
+        profile.district,
+        profile.province,
+        profile.postCode
+      ]
+    : [profile.thaiAddressLine, profile.province, profile.postCode];
+
+  return parts
+    .filter(Boolean)
+    .join(", ");
 }
 
 function splitIsoDate(value?: string) {

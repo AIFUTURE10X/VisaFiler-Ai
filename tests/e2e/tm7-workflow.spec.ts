@@ -14,13 +14,23 @@ test("creates and approves a TM.7 packet", async ({ page }) => {
   await page.getByLabel("First name").fill("Alex");
   await page.getByLabel("Family name").fill("Morgan");
   await page.getByLabel("Nationality").fill("Canadian");
+  await page.getByLabel("Date of birth").fill("1980-05-10");
+  await page.getByLabel("Place of birth").fill("Toronto");
   await page.getByLabel("Passport number").fill("AB123456");
+  await page.getByLabel("Passport issue date").fill("2024-01-02");
   await page.getByLabel("Passport issued at").fill("Ottawa");
   await page.getByLabel("Passport expiry date").fill("2034-01-01");
+  await page.getByLabel("Type of visa").fill("Non-Immigrant O");
   await page.getByLabel("Arrival date").fill("2026-03-01");
+  await page.getByLabel("Arrived by").fill("Air");
+  await page.getByLabel("Arrived from").fill("Singapore");
   await page.getByLabel("Port of arrival").fill("Suvarnabhumi Airport");
-  await page.getByLabel("Thailand address").fill("88/12 Lagoon Road");
+  await page.getByLabel("Address number").fill("88/12");
+  await page.getByLabel("Road").fill("Lagoon Road");
+  await page.getByLabel("Subdistrict").fill("Choeng Thale");
+  await page.getByLabel("District", { exact: true }).fill("Thalang");
   await page.getByLabel("Province").fill("Phuket");
+  await page.getByLabel("Post code").fill("83110");
   await page.getByLabel("Phone").fill("+66 81 000 0000");
   await page.getByRole("button", { name: "Save profile" }).click();
 
