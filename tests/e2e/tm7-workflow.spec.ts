@@ -26,6 +26,7 @@ test("creates and approves a TM.7 packet", async ({ page }) => {
   await page.getByLabel("Arrived by").fill("Air");
   await page.getByLabel("Arrived from").fill("Singapore");
   await page.getByLabel("Port of arrival").fill("Suvarnabhumi Airport");
+  await expect(page.getByLabel("Arrival/departure card no. (TM.6)")).toBeVisible();
   await page.getByLabel("Address number").fill("88/12");
   await page.getByLabel("Road").fill("Lagoon Road");
   await page.getByLabel("Subdistrict").fill("Choeng Thale");

@@ -72,7 +72,7 @@ const profileFields: Array<{
   { label: "Arrived by", key: "arrivedBy", placeholder: "Air" },
   { label: "Arrived from", key: "arrivalFrom", placeholder: "Singapore" },
   { label: "Port of arrival", key: "portOfArrival", placeholder: "Suvarnabhumi Airport" },
-  { label: "TM.6 number", key: "tm6Number", placeholder: "Optional where applicable" },
+  { label: "Arrival/departure card no. (TM.6)", key: "tm6Number", placeholder: "Optional where applicable" },
   { label: "Address number", key: "thaiAddressNumber", placeholder: "88/12" },
   { label: "Road", key: "road", placeholder: "Lagoon Road" },
   { label: "Subdistrict", key: "subDistrict", placeholder: "Choeng Thale" },
