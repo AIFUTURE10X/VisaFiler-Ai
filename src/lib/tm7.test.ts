@@ -1,6 +1,6 @@
 import { describe, expect, test } from "vitest";
-import { getTm7MissingFields, getTm7Readiness } from "./tm7";
-import type { ClientProfile, Tm7WorkflowData } from "./types";
+import { getTm7DocumentChecklist, getTm7MissingFields, getTm7Readiness } from "./tm7";
+import type { ClientProfile, DocumentRecord, DocumentType, Tm7WorkflowData } from "./types";
 
 const completeProfile: ClientProfile = {
   id: "profile_1",
@@ -110,4 +110,45 @@ describe("TM.7 readiness", () => {
       "district"
     ]);
   });
+
+  test("tracks required TM.7 supporting documents separately from print-day reminders", () => {
+    const documents = [
+      documentRecord("passport"),
+      documentRecord("visa_page"),
+      documentRecord("arrival_stamp"),
+      documentRecord("tm30")
+    ];
+
+    const checklist = getTm7DocumentChecklist(documents);
+
+    expect(checklist.summary).toEqual({
+      requiredUploads: 6,
+      completedRequiredUploads: 4,
+      missingRequiredUploads: 2,
+      manualReviewItems: 3
+    });
+    expect(
+      checklist.items
+        .filter((item) => item.required && item.category === "upload" && item.status === "missing")
+        .map((item) => item.label)
+    ).toEqual(["4 x 6 cm passport photo", "Thailand address proof"]);
+    expect(checklist.items.filter((item) => item.category === "print_review").map((item) => item.status)).toEqual([
+      "manual",
+      "manual",
+      "manual"
+    ]);
+  });
 });
+
+function documentRecord(type: DocumentType): DocumentRecord {
+  return {
+    id: `doc_${type}`,
+    clientProfileId: "profile_1",
+    type,
+    fileName: `${type}.pdf`,
+    mimeType: "application/pdf",
+    storagePath: `/tmp/${type}.pdf`,
+    size: 128,
+    createdAt: "2026-05-25T00:00:00.000Z"
+  };
+}

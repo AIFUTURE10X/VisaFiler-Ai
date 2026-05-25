@@ -1,7 +1,7 @@
-import { access, mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { generateTm7Pdf, TM7_PDF_GENERATOR_VERSION } from "./pdf/tm7";
 import { getTm7Readiness } from "./tm7";
+import { readStoredFile, storedFileExists, writeStoredFile } from "./file-storage";
 import {
   type ClientProfile,
   type DocumentRecord,
@@ -75,9 +75,13 @@ export async function saveDocumentUpload(input: {
   const id = crypto.randomUUID();
   const extension = path.extname(input.fileName) || ".bin";
   const uploadsDir = getUploadsDir();
-  const storagePath = path.join(uploadsDir, `${id}${extension}`);
-  await mkdir(uploadsDir, { recursive: true });
-  await writeFile(storagePath, input.bytes);
+  const localPath = path.join(uploadsDir, `${id}${extension}`);
+  const storagePath = await writeStoredFile({
+    localPath,
+    blobPathname: `uploads/${id}${extension}`,
+    bytes: input.bytes,
+    contentType: input.mimeType
+  });
 
   const record: DocumentRecord = {
     id,
@@ -104,7 +108,7 @@ export async function getDocument(id: string): Promise<DocumentRecord | null> {
 }
 
 export async function readDocumentBytes(document: DocumentRecord): Promise<Buffer> {
-  return readFile(document.storagePath);
+  return readStoredFile(document.storagePath);
 }
 
 export async function updateDocument(record: DocumentRecord): Promise<DocumentRecord> {
@@ -136,7 +140,7 @@ export async function createTm7Packet(input: {
       workflow: input.workflowData,
       outputDir: getGeneratedDir()
     });
-    generatedPdfPath = generated.path;
+    generatedPdfPath = await saveGeneratedPdf(generated);
     generatedWith = TM7_PDF_GENERATOR_VERSION;
   }
 
@@ -180,7 +184,7 @@ export async function ensureTm7PacketPdf(id: string): Promise<FormPacket> {
       throw new Error("Client profile not found.");
     }
 
-    const currentPdfExists = packet.generatedPdfPath ? await fileExists(packet.generatedPdfPath) : false;
+    const currentPdfExists = packet.generatedPdfPath ? await storedFileExists(packet.generatedPdfPath) : false;
     const needsRegeneration =
       packet.generatedWith !== TM7_PDF_GENERATOR_VERSION || !packet.generatedPdfPath || !currentPdfExists;
 
@@ -199,9 +203,10 @@ export async function ensureTm7PacketPdf(id: string): Promise<FormPacket> {
       workflow: packet.workflowData,
       outputDir: getGeneratedDir()
     });
+    const generatedPdfPath = await saveGeneratedPdf(generated);
     const regeneratedPacket: FormPacket = {
       ...packet,
-      generatedPdfPath: generated.path,
+      generatedPdfPath,
       generatedWith: TM7_PDF_GENERATOR_VERSION,
       updatedAt: now
     };
@@ -220,13 +225,13 @@ export async function ensureTm7PacketPdf(id: string): Promise<FormPacket> {
   return ensured;
 }
 
-async function fileExists(filePath: string): Promise<boolean> {
-  try {
-    await access(filePath);
-    return true;
-  } catch {
-    return false;
-  }
+async function saveGeneratedPdf(generated: Awaited<ReturnType<typeof generateTm7Pdf>>): Promise<string> {
+  return writeStoredFile({
+    localPath: generated.path,
+    blobPathname: `generated/${generated.fileName}`,
+    bytes: generated.bytes,
+    contentType: "application/pdf"
+  });
 }
 
 export async function approvePacket(id: string): Promise<FormPacket> {

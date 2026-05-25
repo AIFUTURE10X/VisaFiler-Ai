@@ -7,7 +7,8 @@ export default defineConfig({
     timeout: 5_000
   },
   webServer: {
-    command: "pnpm exec next dev -p 3100",
+    command:
+      'powershell -NoProfile -ExecutionPolicy Bypass -Command "Remove-Item -Recurse -Force .visafiler-data-e2e -ErrorAction SilentlyContinue; pnpm exec next dev -p 3100"',
     url: "http://127.0.0.1:3100",
     reuseExistingServer: false,
     env: {

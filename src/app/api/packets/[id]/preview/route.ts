@@ -1,5 +1,5 @@
-import { readFile } from "node:fs/promises";
 import { NextResponse } from "next/server";
+import { readStoredFile } from "@/lib/file-storage";
 import { ensureTm7PacketPdf } from "@/lib/store-service";
 import type { FormPacket } from "@/lib/types";
 
@@ -17,8 +17,8 @@ export async function GET(_request: Request, context: { params: Promise<{ id: st
     return NextResponse.json({ error: "Preview not found." }, { status: 404 });
   }
 
-  const bytes = await readFile(packet.generatedPdfPath);
-  return new Response(bytes, {
+  const bytes = await readStoredFile(packet.generatedPdfPath);
+  return new Response(new Uint8Array(bytes), {
     headers: {
       "Content-Type": "application/pdf",
       "Content-Disposition": "inline",

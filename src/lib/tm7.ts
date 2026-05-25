@@ -1,10 +1,42 @@
-import type { ClientProfile, MissingField, PacketStatus, Tm7WorkflowData } from "./types";
+import type { ClientProfile, DocumentRecord, DocumentType, MissingField, PacketStatus, Tm7WorkflowData } from "./types";
 
 interface FieldDefinition {
   key: keyof ClientProfile | keyof Tm7WorkflowData;
   label: string;
   source: "profile" | "workflow";
   explanation: string;
+}
+
+export type Tm7ChecklistCategory = "upload" | "print_review";
+export type Tm7ChecklistStatus = "complete" | "missing" | "manual";
+
+export interface Tm7ChecklistItem {
+  id: string;
+  label: string;
+  description: string;
+  category: Tm7ChecklistCategory;
+  required: boolean;
+  status: Tm7ChecklistStatus;
+  documentTypes?: DocumentType[];
+}
+
+export interface Tm7DocumentChecklist {
+  items: Tm7ChecklistItem[];
+  summary: {
+    requiredUploads: number;
+    completedRequiredUploads: number;
+    missingRequiredUploads: number;
+    manualReviewItems: number;
+  };
+}
+
+interface ChecklistDefinition {
+  id: string;
+  label: string;
+  description: string;
+  category: Tm7ChecklistCategory;
+  required: boolean;
+  documentTypes?: DocumentType[];
 }
 
 const profileFields: FieldDefinition[] = [
@@ -157,6 +189,86 @@ const workflowFields: FieldDefinition[] = [
   }
 ];
 
+const checklistDefinitions: ChecklistDefinition[] = [
+  {
+    id: "passport",
+    label: "Passport identity page",
+    description: "Upload the passport bio page and bring a signed copy.",
+    category: "upload",
+    required: true,
+    documentTypes: ["passport"]
+  },
+  {
+    id: "visa-page",
+    label: "Current visa or extension page",
+    description: "Upload the current visa, extension, or permission-to-stay page.",
+    category: "upload",
+    required: true,
+    documentTypes: ["visa_page"]
+  },
+  {
+    id: "arrival-stamp",
+    label: "Latest Thailand entry stamp",
+    description: "Upload the most recent entry stamp used for this stay.",
+    category: "upload",
+    required: true,
+    documentTypes: ["arrival_stamp"]
+  },
+  {
+    id: "tm30",
+    label: "TM.30 or address notification proof",
+    description: "Upload the address notification proof used by the local office.",
+    category: "upload",
+    required: true,
+    documentTypes: ["tm30"]
+  },
+  {
+    id: "photo",
+    label: "4 x 6 cm passport photo",
+    description: "Attach a recent photo that matches the TM.7 photo box.",
+    category: "upload",
+    required: true,
+    documentTypes: ["photo"]
+  },
+  {
+    id: "address-proof",
+    label: "Thailand address proof",
+    description: "Upload rental, hotel, condo, or other local address evidence.",
+    category: "upload",
+    required: true,
+    documentTypes: ["address_proof"]
+  },
+  {
+    id: "tm6-card",
+    label: "TM.6 card copy",
+    description: "Only needed where the applicant still has an arrival/departure card.",
+    category: "upload",
+    required: false,
+    documentTypes: ["tm6_card"]
+  },
+  {
+    id: "a4-scale",
+    label: "Print on A4 at 100% scale",
+    description: "Use actual size printing so fields stay aligned with the official form.",
+    category: "print_review",
+    required: true
+  },
+  {
+    id: "signatures",
+    label: "Applicant signs form and copies",
+    description: "Sign the TM.7 and supporting copies after printing.",
+    category: "print_review",
+    required: true
+  },
+  {
+    id: "fee",
+    label: "Bring the application fee",
+    description: "Prepare the local office fee, commonly 1,900 THB for an extension application.",
+    category: "print_review",
+    required: true
+  }
+];
+
 const hasValue = (value: unknown): boolean => {
   if (typeof value === "number") return Number.isFinite(value) && value > 0;
   return typeof value === "string" ? value.trim().length > 0 : Boolean(value);
@@ -200,4 +312,30 @@ export function getTm7Readiness(profile: ClientProfile, workflow: Tm7WorkflowDat
 
 export function getTm7FieldDefinitions(): FieldDefinition[] {
   return [...profileFields, ...workflowFields];
+}
+
+export function getTm7DocumentChecklist(documents: Pick<DocumentRecord, "type">[]): Tm7DocumentChecklist {
+  const uploadedTypes = new Set(documents.map((document) => document.type));
+  const items = checklistDefinitions.map((item) => {
+    const hasUpload = item.documentTypes?.some((type) => uploadedTypes.has(type)) ?? false;
+    const status: Tm7ChecklistStatus =
+      item.category === "print_review" ? "manual" : hasUpload ? "complete" : "missing";
+
+    return {
+      ...item,
+      status
+    };
+  });
+  const requiredUploadItems = items.filter((item) => item.category === "upload" && item.required);
+  const completedRequiredUploads = requiredUploadItems.filter((item) => item.status === "complete").length;
+
+  return {
+    items,
+    summary: {
+      requiredUploads: requiredUploadItems.length,
+      completedRequiredUploads,
+      missingRequiredUploads: requiredUploadItems.length - completedRequiredUploads,
+      manualReviewItems: items.filter((item) => item.category === "print_review").length
+    }
+  };
 }

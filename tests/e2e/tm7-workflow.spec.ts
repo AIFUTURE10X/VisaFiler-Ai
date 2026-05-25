@@ -15,6 +15,9 @@ test("creates and approves a TM.7 packet", async ({ page }) => {
     page.getByText("TM.7 is the Thai immigration form for extending a temporary stay, including a 30-day visa extension.")
   ).toBeVisible();
   await expect(page.locator("span", { hasText: "30-day visa extension" })).toHaveClass(/bg-accent-soft/);
+  await expect(page.getByRole("heading", { name: "TM.7 document checklist" })).toBeVisible();
+  await expect(page.getByText("0/6 required uploads ready")).toBeVisible();
+  await expect(page.getByText("Print on A4 at 100% scale")).toBeVisible();
 
   await page.getByLabel("First name").fill("Alex");
   await page.getByLabel("Middle name").fill("M");

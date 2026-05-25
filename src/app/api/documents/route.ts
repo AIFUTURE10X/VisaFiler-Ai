@@ -8,6 +8,7 @@ const allowedTypes = new Set([
   "arrival_stamp",
   "tm30",
   "address_proof",
+  "tm6_card",
   "photo",
   "signature",
   "supporting"

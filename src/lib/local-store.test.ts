@@ -1,4 +1,4 @@
-import { mkdtemp, rm } from "node:fs/promises";
+import { mkdtemp, readFile, rm } from "node:fs/promises";
 import path from "node:path";
 import { tmpdir } from "node:os";
 import { afterEach, describe, expect, test } from "vitest";
@@ -54,5 +54,32 @@ describe("LocalStore", () => {
     process.env.VERCEL = "1";
 
     expect(getDataDir()).toBe(path.join(tmpdir(), "visafiler-data"));
+  });
+
+  test("serializes concurrent local updates without corrupting the JSON store", async () => {
+    const dir = await mkdtemp(path.join(tmpdir(), "visafiler-store-"));
+    tempDirs.push(dir);
+    const store = new LocalStore(dir);
+
+    await Promise.all(
+      Array.from({ length: 8 }, (_, index) =>
+        store.update((data) => ({
+          ...data,
+          profiles: [
+            ...data.profiles,
+            {
+              id: `profile_${index}`,
+              legalFirstName: `Applicant ${index}`,
+              legalFamilyName: "Morgan",
+              createdAt: "2026-05-25T00:00:00.000Z",
+              updatedAt: "2026-05-25T00:00:00.000Z"
+            }
+          ]
+        }))
+      )
+    );
+
+    const raw = await readFile(path.join(dir, "store.json"), "utf-8");
+    expect(JSON.parse(raw).profiles).toHaveLength(8);
   });
 });

@@ -13,7 +13,7 @@ import {
 } from "lucide-react";
 import { useMemo, useState } from "react";
 import { getAiFieldExplanation } from "@/lib/ai";
-import { getTm7Readiness } from "@/lib/tm7";
+import { getTm7DocumentChecklist, getTm7Readiness, type Tm7DocumentChecklist } from "@/lib/tm7";
 import type { AppData, ClientProfile, DocumentRecord, FormPacket, Tm7WorkflowData } from "@/lib/types";
 
 interface AppShellProps {
@@ -100,6 +100,7 @@ export function AppShell({ initialData }: AppShellProps) {
   const [message, setMessage] = useState("Ready to build a TM.7 packet.");
 
   const readiness = useMemo(() => getTm7Readiness(profile, workflow), [profile, workflow]);
+  const checklist = useMemo(() => getTm7DocumentChecklist(documents), [documents]);
   const latestPacketReady = packet?.status === "ready_for_review" || packet?.status === "approved";
 
   async function saveProfile() {
@@ -307,24 +308,28 @@ export function AppShell({ initialData }: AppShellProps) {
               </div>
             </div>
 
-            <div className="rounded-md border border-line bg-surface p-5 shadow-soft">
-              <h3 className="text-lg font-bold">Missing information</h3>
-              <div className="mt-4 space-y-3">
-                {readiness.missing.length === 0 ? (
-                  <div className="rounded-md bg-primary-soft p-3 text-sm text-primary">Ready for review</div>
-                ) : (
-                  readiness.missing.map((field) => (
-                    <div className="rounded-md border border-line p-3" key={field.key}>
-                      <div className="flex items-center justify-between gap-3">
-                        <p className="font-semibold">{field.label}</p>
-                        <span className="rounded-full bg-accent-soft px-2 py-1 text-xs font-semibold text-accent">
-                          {field.source}
-                        </span>
+            <div className="space-y-6">
+              <ChecklistPanel checklist={checklist} />
+
+              <div className="rounded-md border border-line bg-surface p-5 shadow-soft">
+                <h3 className="text-lg font-bold">Missing information</h3>
+                <div className="mt-4 space-y-3">
+                  {readiness.missing.length === 0 ? (
+                    <div className="rounded-md bg-primary-soft p-3 text-sm text-primary">Ready for review</div>
+                  ) : (
+                    readiness.missing.map((field) => (
+                      <div className="rounded-md border border-line p-3" key={field.key}>
+                        <div className="flex items-center justify-between gap-3">
+                          <p className="font-semibold">{field.label}</p>
+                          <span className="rounded-full bg-accent-soft px-2 py-1 text-xs font-semibold text-accent">
+                            {field.source}
+                          </span>
+                        </div>
+                        <p className="mt-2 text-sm text-muted">{getAiFieldExplanation(String(field.key))}</p>
                       </div>
-                      <p className="mt-2 text-sm text-muted">{getAiFieldExplanation(String(field.key))}</p>
-                    </div>
-                  ))
-                )}
+                    ))
+                  )}
+                </div>
               </div>
             </div>
           </section>
@@ -380,6 +385,9 @@ export function AppShell({ initialData }: AppShellProps) {
                   <option value="arrival_stamp">Arrival stamp</option>
                   <option value="tm30">TM30</option>
                   <option value="address_proof">Address proof</option>
+                  <option value="tm6_card">TM.6 card</option>
+                  <option value="photo">Passport photo</option>
+                  <option value="signature">Signature</option>
                   <option value="supporting">Supporting</option>
                 </select>
               </label>
@@ -457,6 +465,57 @@ export function AppShell({ initialData }: AppShellProps) {
         </section>
       </div>
     </main>
+  );
+}
+
+function ChecklistPanel({ checklist }: { checklist: Tm7DocumentChecklist }) {
+  return (
+    <div className="rounded-md border border-line bg-surface p-5 shadow-soft">
+      <div className="flex flex-col justify-between gap-2 sm:flex-row sm:items-start">
+        <div>
+          <h3 className="text-lg font-bold">TM.7 document checklist</h3>
+          <p className="text-sm text-muted">
+            {checklist.summary.completedRequiredUploads}/{checklist.summary.requiredUploads} required uploads ready
+          </p>
+        </div>
+        <span className="rounded-full bg-primary-soft px-2 py-1 text-xs font-semibold text-primary">
+          {checklist.summary.manualReviewItems} print checks
+        </span>
+      </div>
+
+      <div className="mt-4 space-y-3">
+        {checklist.items.map((item) => {
+          const isComplete = item.status === "complete";
+          const isManual = item.status === "manual";
+          return (
+            <div className="rounded-md border border-line p-3" key={item.id}>
+              <div className="flex items-start gap-3">
+                <div
+                  className={`mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full ${
+                    isComplete || isManual ? "bg-primary-soft text-primary" : "bg-accent-soft text-accent"
+                  }`}
+                >
+                  {isComplete ? <CheckCircle2 className="h-4 w-4" /> : <FileText className="h-4 w-4" />}
+                </div>
+                <div className="min-w-0">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <p className="font-semibold">{item.label}</p>
+                    <span
+                      className={`rounded-full px-2 py-1 text-xs font-semibold ${
+                        isComplete || isManual ? "bg-primary-soft text-primary" : "bg-accent-soft text-accent"
+                      }`}
+                    >
+                      {isManual ? "Print check" : isComplete ? "Uploaded" : item.required ? "Required" : "Where applicable"}
+                    </span>
+                  </div>
+                  <p className="mt-1 text-sm text-muted">{item.description}</p>
+                </div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
   );
 }
 
