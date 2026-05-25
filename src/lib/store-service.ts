@@ -1,6 +1,6 @@
-import { mkdir, readFile, writeFile } from "node:fs/promises";
+import { access, mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
-import { generateTm7Pdf } from "./pdf/tm7";
+import { generateTm7Pdf, TM7_PDF_GENERATOR_VERSION } from "./pdf/tm7";
 import { getTm7Readiness } from "./tm7";
 import {
   type ClientProfile,
@@ -128,6 +128,7 @@ export async function createTm7Packet(input: {
   const readiness = getTm7Readiness(profile, input.workflowData);
   const now = new Date().toISOString();
   let generatedPdfPath: string | undefined;
+  let generatedWith: string | undefined;
 
   if (readiness.status === "ready_for_review") {
     const generated = await generateTm7Pdf({
@@ -136,6 +137,7 @@ export async function createTm7Packet(input: {
       outputDir: getGeneratedDir()
     });
     generatedPdfPath = generated.path;
+    generatedWith = TM7_PDF_GENERATOR_VERSION;
   }
 
   const packet: FormPacket = {
@@ -145,6 +147,7 @@ export async function createTm7Packet(input: {
     status: readiness.status,
     workflowData: input.workflowData,
     generatedPdfPath,
+    generatedWith,
     createdAt: now,
     updatedAt: now
   };
@@ -160,6 +163,70 @@ export async function createTm7Packet(input: {
 export async function getPacket(id: string): Promise<FormPacket | null> {
   const data = await store.read();
   return data.packets.find((packet) => packet.id === id) ?? null;
+}
+
+export async function ensureTm7PacketPdf(id: string): Promise<FormPacket> {
+  let ensured: FormPacket | null = null;
+  const now = new Date().toISOString();
+
+  await store.update(async (data) => {
+    const packet = data.packets.find((item) => item.id === id);
+    if (!packet) {
+      throw new Error("Packet not found.");
+    }
+
+    const profile = data.profiles.find((item) => item.id === packet.clientProfileId);
+    if (!profile) {
+      throw new Error("Client profile not found.");
+    }
+
+    const currentPdfExists = packet.generatedPdfPath ? await fileExists(packet.generatedPdfPath) : false;
+    const needsRegeneration =
+      packet.generatedWith !== TM7_PDF_GENERATOR_VERSION || !packet.generatedPdfPath || !currentPdfExists;
+
+    if (!needsRegeneration) {
+      ensured = packet;
+      return data;
+    }
+
+    const readiness = getTm7Readiness(profile, packet.workflowData);
+    if (readiness.status !== "ready_for_review") {
+      throw new Error("TM.7 packet is missing required information.");
+    }
+
+    const generated = await generateTm7Pdf({
+      profile,
+      workflow: packet.workflowData,
+      outputDir: getGeneratedDir()
+    });
+    const regeneratedPacket: FormPacket = {
+      ...packet,
+      generatedPdfPath: generated.path,
+      generatedWith: TM7_PDF_GENERATOR_VERSION,
+      updatedAt: now
+    };
+
+    ensured = regeneratedPacket;
+    return {
+      ...data,
+      packets: data.packets.map((item) => (item.id === packet.id ? regeneratedPacket : item))
+    };
+  });
+
+  if (!ensured) {
+    throw new Error("Packet not found.");
+  }
+
+  return ensured;
+}
+
+async function fileExists(filePath: string): Promise<boolean> {
+  try {
+    await access(filePath);
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 export async function approvePacket(id: string): Promise<FormPacket> {

@@ -437,7 +437,7 @@ export function AppShell({ initialData }: AppShellProps) {
             {packet?.generatedPdfPath ? (
               <iframe
                 className="h-[720px] w-full rounded-md border border-line"
-                src={`/api/packets/${packet.id}/preview`}
+                src={`/api/packets/${packet.id}/preview?v=${encodeURIComponent(packet.updatedAt)}`}
                 title="Preview generated PDF"
               />
             ) : (

@@ -1,11 +1,18 @@
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { NextResponse } from "next/server";
-import { getPacket } from "@/lib/store-service";
+import { ensureTm7PacketPdf } from "@/lib/store-service";
+import type { FormPacket } from "@/lib/types";
 
 export async function GET(_request: Request, context: { params: Promise<{ id: string }> }) {
   const { id } = await context.params;
-  const packet = await getPacket(id);
+  let packet: FormPacket;
+  try {
+    packet = await ensureTm7PacketPdf(id);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Download not found.";
+    return NextResponse.json({ error: message }, { status: 404 });
+  }
 
   if (!packet?.generatedPdfPath) {
     return NextResponse.json({ error: "Download not found." }, { status: 404 });
@@ -17,7 +24,8 @@ export async function GET(_request: Request, context: { params: Promise<{ id: st
   return new Response(bytes, {
     headers: {
       "Content-Type": "application/pdf",
-      "Content-Disposition": `attachment; filename="${fileName}"`
+      "Content-Disposition": `attachment; filename="${fileName}"`,
+      "Cache-Control": "no-store, max-age=0"
     }
   });
 }

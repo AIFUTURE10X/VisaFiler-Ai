@@ -16,6 +16,8 @@ interface GenerateTm7PdfResult {
   path: string;
 }
 
+export const TM7_PDF_GENERATOR_VERSION = "tm7-pdf-gregorian-years-v1";
+
 const templatePath = () => path.join(process.cwd(), "assets", "templates", "tm7.pdf");
 
 const fullName = (profile: ClientProfile): string =>

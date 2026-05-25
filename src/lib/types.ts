@@ -81,6 +81,7 @@ export interface FormPacket {
   status: PacketStatus;
   workflowData: Tm7WorkflowData;
   generatedPdfPath?: string;
+  generatedWith?: string;
   approvedAt?: string;
   exportedAt?: string;
   createdAt: string;
