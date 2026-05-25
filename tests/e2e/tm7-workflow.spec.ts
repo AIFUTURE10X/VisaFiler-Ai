@@ -2,13 +2,13 @@ import { rm } from "node:fs/promises";
 import { expect, test } from "@playwright/test";
 
 test.beforeEach(async () => {
-  await rm(".visadesk-data-e2e", { recursive: true, force: true });
+  await rm(".visafiler-data-e2e", { recursive: true, force: true });
 });
 
 test("creates and approves a TM.7 packet", async ({ page }) => {
   await page.goto("/");
 
-  await expect(page.getByRole("heading", { name: "VisaDesk AI" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "VisaFiler AI" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "TM.7 packet workflow" })).toBeVisible();
 
   await page.getByLabel("First name").fill("Alex");

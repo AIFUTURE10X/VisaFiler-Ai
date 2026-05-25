@@ -52,7 +52,7 @@ const workflow: Tm7WorkflowData = {
 
 describe("TM.7 PDF generation", () => {
   test("writes a printable PDF from the bundled template", async () => {
-    const dir = await mkdtemp(path.join(tmpdir(), "visadesk-pdf-"));
+    const dir = await mkdtemp(path.join(tmpdir(), "visafiler-pdf-"));
     tempDirs.push(dir);
 
     const result = await generateTm7Pdf({ profile, workflow, outputDir: dir });
@@ -65,7 +65,7 @@ describe("TM.7 PDF generation", () => {
   });
 
   test("places filled values on the matching TM.7 rows", async () => {
-    const dir = await mkdtemp(path.join(tmpdir(), "visadesk-pdf-"));
+    const dir = await mkdtemp(path.join(tmpdir(), "visafiler-pdf-"));
     tempDirs.push(dir);
 
     const result = await generateTm7Pdf({ profile, workflow, outputDir: dir });
@@ -87,7 +87,7 @@ describe("TM.7 PDF generation", () => {
   });
 
   test("uses western Gregorian years in the printable date fields", async () => {
-    const dir = await mkdtemp(path.join(tmpdir(), "visadesk-pdf-"));
+    const dir = await mkdtemp(path.join(tmpdir(), "visafiler-pdf-"));
     tempDirs.push(dir);
 
     const result = await generateTm7Pdf({ profile, workflow, outputDir: dir });

@@ -42,7 +42,7 @@ export async function extractDocumentWithOpenAI(document: DocumentRecord) {
       }
     ],
     text: {
-      format: zodTextFormat(AiExtractionResultSchema, "visadesk_document_extraction")
+      format: zodTextFormat(AiExtractionResultSchema, "visafiler_document_extraction")
     }
   });
 

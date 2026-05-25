@@ -6,13 +6,19 @@ import { LocalStore } from "./local-store";
 import type { ClientProfile, Tm7WorkflowData } from "./types";
 
 let tempDirs: string[] = [];
-const previousDataDir = process.env.VISADESK_DATA_DIR;
+const previousVisafilerDataDir = process.env.VISAFILER_DATA_DIR;
+const previousVisadeskDataDir = process.env.VISADESK_DATA_DIR;
 
 afterEach(async () => {
-  if (previousDataDir === undefined) {
+  if (previousVisafilerDataDir === undefined) {
+    delete process.env.VISAFILER_DATA_DIR;
+  } else {
+    process.env.VISAFILER_DATA_DIR = previousVisafilerDataDir;
+  }
+  if (previousVisadeskDataDir === undefined) {
     delete process.env.VISADESK_DATA_DIR;
   } else {
-    process.env.VISADESK_DATA_DIR = previousDataDir;
+    process.env.VISADESK_DATA_DIR = previousVisadeskDataDir;
   }
   vi.resetModules();
   await Promise.all(tempDirs.map((dir) => rm(dir, { recursive: true, force: true })));
@@ -55,9 +61,9 @@ const workflow: Tm7WorkflowData = {
 
 describe("store service packet PDFs", () => {
   test("regenerates stale TM.7 PDFs before serving packets", async () => {
-    const dir = await mkdtemp(path.join(tmpdir(), "visadesk-store-service-"));
+    const dir = await mkdtemp(path.join(tmpdir(), "visafiler-store-service-"));
     tempDirs.push(dir);
-    process.env.VISADESK_DATA_DIR = dir;
+    process.env.VISAFILER_DATA_DIR = dir;
     vi.resetModules();
 
     const store = new LocalStore(dir);

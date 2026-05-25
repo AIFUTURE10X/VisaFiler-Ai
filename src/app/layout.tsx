@@ -2,7 +2,8 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "VisaDesk AI",
+  metadataBase: new URL("https://visafilerai.com"),
+  title: "VisaFiler AI",
   description: "Thailand visa paperwork from a saved profile."
 };
 

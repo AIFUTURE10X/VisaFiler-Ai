@@ -1,10 +1,10 @@
-# VisaDesk AI PRD
+# VisaFiler AI PRD
 
 ## 1. Overview
 
-**Product name:** VisaDesk AI
+**Product name:** VisaFiler AI
 
-**One-liner:** VisaDesk AI helps Thailand expats and visa agents turn stored client details and uploaded documents into completed, print-ready immigration form packets.
+**One-liner:** VisaFiler AI helps Thailand expats and visa agents turn stored client details and uploaded documents into completed, print-ready immigration form packets.
 
 **Primary wedge:** Thailand visa and immigration admin, starting with TM.7 extension forms and expanding to related long-stay workflows.
 
@@ -585,7 +585,7 @@ Healthcare prior authorization is a strong future opportunity but should be trea
 
 ## 15. Open Questions
 
-- Product name: keep VisaDesk AI or choose a Thailand-specific name?
+- Product name: keep VisaFiler AI or choose a Thailand-specific name?
 - Should the first release be individual self-serve, B2B agent-first, or both with one shared codebase?
 - Which Thai immigration forms should follow TM.7?
 - Should signatures/photos be placed automatically or left blank by default?

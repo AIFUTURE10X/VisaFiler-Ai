@@ -11,7 +11,7 @@ export default defineConfig({
     url: "http://127.0.0.1:3100",
     reuseExistingServer: false,
     env: {
-      VISADESK_DATA_DIR: ".visadesk-data-e2e"
+      VISAFILER_DATA_DIR: ".visafiler-data-e2e"
     },
     timeout: 120_000
   },

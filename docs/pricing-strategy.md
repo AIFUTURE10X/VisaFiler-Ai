@@ -1,4 +1,4 @@
-# VisaDesk AI Pricing Strategy
+# VisaFiler AI Pricing Strategy
 
 ## Recommendation
 

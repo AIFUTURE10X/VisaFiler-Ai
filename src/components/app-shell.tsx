@@ -197,7 +197,7 @@ export function AppShell({ initialData }: AppShellProps) {
               <ShieldCheck className="h-5 w-5" aria-hidden />
             </div>
             <div>
-              <h1 className="text-xl font-bold tracking-normal">VisaDesk AI</h1>
+              <h1 className="text-xl font-bold tracking-normal">VisaFiler AI</h1>
               <p className="text-sm text-muted">Thailand visa paperwork desk</p>
             </div>
           </div>

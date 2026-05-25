@@ -13,7 +13,7 @@ afterEach(async () => {
 
 describe("LocalStore", () => {
   test("creates an empty store and persists profile updates", async () => {
-    const dir = await mkdtemp(path.join(tmpdir(), "visadesk-store-"));
+    const dir = await mkdtemp(path.join(tmpdir(), "visafiler-store-"));
     tempDirs.push(dir);
     const store = new LocalStore(dir);
 

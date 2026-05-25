@@ -2,7 +2,7 @@
 
 ## Recommended Name
 
-**VisaDesk AI**
+**VisaFiler AI**
 
 ## Why This Name Works
 
@@ -22,8 +22,8 @@
 
 ## Other Name Options
 
-- VisaDesk AI
-- VisaDesk Thailand
+- VisaFiler AI
+- VisaFiler Thailand
 - FormVisa
 - VisaVault
 - PermitPilot
@@ -36,4 +36,4 @@
 
 ## Recommendation
 
-Use **VisaDesk AI** as the parent brand. If the first launch needs to feel highly local, use **VisaDesk Thailand** as the public-facing product name while keeping VisaDesk AI as the broader platform name.
+Use **VisaFiler AI** as the parent brand on `visafilerai.com`. If the first launch needs to feel highly local, use **VisaFiler Thailand** as the public-facing product name while keeping VisaFiler AI as the broader platform name.

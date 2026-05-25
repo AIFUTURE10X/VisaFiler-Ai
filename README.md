@@ -1,6 +1,8 @@
-# VisaDesk AI
+# VisaFiler AI
 
-VisaDesk AI is a product concept for a Thailand-first expat visa admin assistant and B2B visa-agent tool.
+VisaFiler AI is a product concept for a Thailand-first expat visa admin assistant and B2B visa-agent tool.
+
+Primary domain: `visafilerai.com`.
 
 The core idea: store reusable client/profile data once, then generate print-ready immigration forms and supporting document packets faster, with AI helping identify missing information and explain form fields.
 
@@ -39,7 +41,7 @@ pnpm dev
 
 Open `http://localhost:3000`.
 
-Runtime data is stored in `.visadesk-data/`, which is intentionally ignored by git. The app reuses `OPENAI_API_KEY` from the environment for document extraction. Live OpenAI smoke checks are opt-in:
+Runtime data is stored in `.visafiler-data/`, which is intentionally ignored by git. Existing `.visadesk-data/` stores are reused automatically during the rename period. The app reuses `OPENAI_API_KEY` from the environment for document extraction. Live OpenAI smoke checks are opt-in:
 
 ```powershell
 $env:RUN_OPENAI_SMOKE="1"; pnpm smoke:ai

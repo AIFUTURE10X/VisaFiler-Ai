@@ -1,5 +1,5 @@
 ---
-name: VisaDesk AI
+name: VisaFiler AI
 colors:
   background: "#F6F7F4"
   surface: "#FFFFFF"
@@ -57,7 +57,7 @@ components:
 
 ## Overview
 
-VisaDesk AI should feel like a professional operations desk for sensitive immigration paperwork. The interface should prioritize clarity, auditability, and completion status over marketing flourish.
+VisaFiler AI should feel like a professional operations desk for sensitive immigration paperwork. The interface should prioritize clarity, auditability, and completion status over marketing flourish.
 
 ## Colors
 
