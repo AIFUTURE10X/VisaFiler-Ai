@@ -18,6 +18,11 @@ test("creates and approves a TM.7 packet", async ({ page }) => {
   await expect(page.getByRole("heading", { name: "TM.7 document checklist" })).toBeVisible();
   await expect(page.getByText("0/6 required uploads ready")).toBeVisible();
   await expect(page.getByText("Print on A4 at 100% scale")).toBeVisible();
+  const checklistPanel = page.getByTestId("tm7-checklist-panel");
+  await expect(async () => {
+    const box = await checklistPanel.boundingBox();
+    expect(box?.width).toBeGreaterThan(600);
+  }).toPass();
 
   await page.getByLabel("First name").fill("Alex");
   await page.getByLabel("Middle name").fill("M");

@@ -244,7 +244,7 @@ export function AppShell({ initialData }: AppShellProps) {
             </div>
           </div>
 
-          <section id="workflow" className="grid grid-cols-1 gap-6 xl:grid-cols-[1fr_360px]">
+          <section id="workflow" className="space-y-6">
             <div className="rounded-md border border-line bg-surface p-5 shadow-soft">
               <div className="mb-4 flex items-center justify-between">
                 <div>
@@ -306,30 +306,27 @@ export function AppShell({ initialData }: AppShellProps) {
                   </a>
                 ) : null}
               </div>
+              <ChecklistPanel checklist={checklist} />
             </div>
 
-            <div className="space-y-6">
-              <ChecklistPanel checklist={checklist} />
-
-              <div className="rounded-md border border-line bg-surface p-5 shadow-soft">
-                <h3 className="text-lg font-bold">Missing information</h3>
-                <div className="mt-4 space-y-3">
-                  {readiness.missing.length === 0 ? (
-                    <div className="rounded-md bg-primary-soft p-3 text-sm text-primary">Ready for review</div>
-                  ) : (
-                    readiness.missing.map((field) => (
-                      <div className="rounded-md border border-line p-3" key={field.key}>
-                        <div className="flex items-center justify-between gap-3">
-                          <p className="font-semibold">{field.label}</p>
-                          <span className="rounded-full bg-accent-soft px-2 py-1 text-xs font-semibold text-accent">
-                            {field.source}
-                          </span>
-                        </div>
-                        <p className="mt-2 text-sm text-muted">{getAiFieldExplanation(String(field.key))}</p>
+            <div className="rounded-md border border-line bg-surface p-5 shadow-soft">
+              <h3 className="text-lg font-bold">Missing information</h3>
+              <div className="mt-4 grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
+                {readiness.missing.length === 0 ? (
+                  <div className="rounded-md bg-primary-soft p-3 text-sm text-primary">Ready for review</div>
+                ) : (
+                  readiness.missing.map((field) => (
+                    <div className="rounded-md border border-line p-3" key={field.key}>
+                      <div className="flex items-center justify-between gap-3">
+                        <p className="font-semibold">{field.label}</p>
+                        <span className="rounded-full bg-accent-soft px-2 py-1 text-xs font-semibold text-accent">
+                          {field.source}
+                        </span>
                       </div>
-                    ))
-                  )}
-                </div>
+                      <p className="mt-2 text-sm text-muted">{getAiFieldExplanation(String(field.key))}</p>
+                    </div>
+                  ))
+                )}
               </div>
             </div>
           </section>
@@ -470,7 +467,7 @@ export function AppShell({ initialData }: AppShellProps) {
 
 function ChecklistPanel({ checklist }: { checklist: Tm7DocumentChecklist }) {
   return (
-    <div className="rounded-md border border-line bg-surface p-5 shadow-soft">
+    <div className="mt-6 border-t border-line pt-5" data-testid="tm7-checklist-panel">
       <div className="flex flex-col justify-between gap-2 sm:flex-row sm:items-start">
         <div>
           <h3 className="text-lg font-bold">TM.7 document checklist</h3>
@@ -483,7 +480,7 @@ function ChecklistPanel({ checklist }: { checklist: Tm7DocumentChecklist }) {
         </span>
       </div>
 
-      <div className="mt-4 space-y-3">
+      <div className="mt-4 grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
         {checklist.items.map((item) => {
           const isComplete = item.status === "complete";
           const isManual = item.status === "manual";
