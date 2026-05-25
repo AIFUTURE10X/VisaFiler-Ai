@@ -11,6 +11,7 @@ export default defineConfig({
     url: "http://127.0.0.1:3100",
     reuseExistingServer: false,
     env: {
+      NEXT_DIST_DIR: ".next-e2e",
       VISAFILER_DATA_DIR: ".visafiler-data-e2e"
     },
     timeout: 120_000

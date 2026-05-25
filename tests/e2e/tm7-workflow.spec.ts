@@ -9,6 +9,7 @@ test("creates and approves a TM.7 packet", async ({ page }) => {
   await page.goto("/");
 
   await expect(page.getByRole("heading", { name: "VisaFiler AI" })).toBeVisible();
+  await expect(page.locator("body")).toHaveCSS("background-color", "rgb(246, 247, 244)");
   await expect(page.getByRole("heading", { name: "TM.7 packet workflow" })).toBeVisible();
   await expect(
     page.getByText("TM.7 is the Thai immigration form for extending a temporary stay, including a 30-day visa extension.")
