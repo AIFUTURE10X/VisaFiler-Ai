@@ -16,7 +16,9 @@ test("creates and approves a TM.7 packet", async ({ page }) => {
   ).toBeVisible();
   await expect(page.locator("span", { hasText: "30-day visa extension" })).toHaveClass(/bg-accent-soft/);
   await expect(page.getByRole("heading", { name: "TM.7 document checklist" })).toBeVisible();
-  await expect(page.getByText("0/6 required uploads ready")).toBeVisible();
+  await expect(page.getByText("0/6 required documents checked")).toBeVisible();
+  await page.getByLabel("Passport identity page").check();
+  await expect(page.getByText("1/6 required documents checked")).toBeVisible();
   await expect(page.getByText("Print on A4 at 100% scale")).toBeVisible();
   const checklistPanel = page.getByTestId("tm7-checklist-panel");
   await expect(async () => {

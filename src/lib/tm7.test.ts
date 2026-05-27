@@ -1,6 +1,6 @@
 import { describe, expect, test } from "vitest";
 import { getTm7DocumentChecklist, getTm7MissingFields, getTm7Readiness } from "./tm7";
-import type { ClientProfile, DocumentRecord, DocumentType, Tm7WorkflowData } from "./types";
+import type { ClientProfile, Tm7WorkflowData } from "./types";
 
 const completeProfile: ClientProfile = {
   id: "profile_1",
@@ -111,44 +111,25 @@ describe("TM.7 readiness", () => {
     ]);
   });
 
-  test("tracks required TM.7 supporting documents separately from print-day reminders", () => {
-    const documents = [
-      documentRecord("passport"),
-      documentRecord("visa_page"),
-      documentRecord("arrival_stamp"),
-      documentRecord("tm30")
-    ];
-
-    const checklist = getTm7DocumentChecklist(documents);
+  test("tracks TM.7 supporting documents as applicant confirmations instead of uploads", () => {
+    const checklist = getTm7DocumentChecklist(["passport", "visa-page", "arrival-stamp", "a4-scale"]);
 
     expect(checklist.summary).toEqual({
-      requiredUploads: 6,
-      completedRequiredUploads: 4,
-      missingRequiredUploads: 2,
-      manualReviewItems: 3
+      requiredDocuments: 6,
+      checkedRequiredDocuments: 3,
+      remainingRequiredDocuments: 3,
+      printChecks: 3,
+      checkedPrintChecks: 1
     });
     expect(
       checklist.items
-        .filter((item) => item.required && item.category === "upload" && item.status === "missing")
+        .filter((item) => item.required && item.category === "supporting_document" && item.status === "unchecked")
         .map((item) => item.label)
-    ).toEqual(["4 x 6 cm passport photo", "Thailand address proof"]);
+    ).toEqual(["TM.30 or address notification proof", "4 x 6 cm passport photo", "Thailand address proof"]);
     expect(checklist.items.filter((item) => item.category === "print_review").map((item) => item.status)).toEqual([
-      "manual",
-      "manual",
-      "manual"
+      "checked",
+      "unchecked",
+      "unchecked"
     ]);
   });
 });
-
-function documentRecord(type: DocumentType): DocumentRecord {
-  return {
-    id: `doc_${type}`,
-    clientProfileId: "profile_1",
-    type,
-    fileName: `${type}.pdf`,
-    mimeType: "application/pdf",
-    storagePath: `/tmp/${type}.pdf`,
-    size: 128,
-    createdAt: "2026-05-25T00:00:00.000Z"
-  };
-}

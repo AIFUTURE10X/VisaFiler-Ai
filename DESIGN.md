@@ -78,7 +78,7 @@ Forms should clearly separate reusable profile details from one-time TM.7 workfl
 ## Do's and Don'ts
 
 - Do make the first screen after launch a working dashboard.
-- Do show completion, missing fields, document status, and export readiness at all times.
+- Do show completion, missing fields, checklist status, and export readiness at all times.
 - Do require preview approval before final export.
 - Don't imply legal advice or immigration approval guarantees.
 - Don't send uploaded documents to AI without a deliberate user action.

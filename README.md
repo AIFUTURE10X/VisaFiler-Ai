@@ -43,7 +43,7 @@ Open `http://localhost:3000`.
 
 Runtime data is stored in `.visafiler-data/`, which is intentionally ignored by git. Existing `.visadesk-data/` stores are reused automatically during the rename period. On Vercel, the app uses private Vercel Blob persistence when `BLOB_READ_WRITE_TOKEN` is configured. The app reuses `OPENAI_API_KEY` from the environment for document extraction. Live OpenAI smoke checks are opt-in:
 
-The TM.7 workflow includes missing-field readiness checks, a supporting-document checklist, print-day checks, and generated PDF preview/download from the bundled official form template.
+The TM.7 workflow includes missing-field readiness checks, a customer-friendly supporting-document checklist, print-day checks, and generated PDF preview/download from the bundled official form template. Uploads are optional and only used for document storage or AI extraction.
 
 ```powershell
 $env:RUN_OPENAI_SMOKE="1"; pnpm smoke:ai

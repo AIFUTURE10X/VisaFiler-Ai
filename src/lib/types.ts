@@ -43,6 +43,7 @@ export interface Tm7WorkflowData {
   applicationDate?: string;
   extensionReason?: string;
   requestedExtensionDays?: number;
+  documentChecklistConfirmedIds?: string[];
 }
 
 export interface MissingField {

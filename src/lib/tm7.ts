@@ -1,4 +1,4 @@
-import type { ClientProfile, DocumentRecord, DocumentType, MissingField, PacketStatus, Tm7WorkflowData } from "./types";
+import type { ClientProfile, MissingField, PacketStatus, Tm7WorkflowData } from "./types";
 
 interface FieldDefinition {
   key: keyof ClientProfile | keyof Tm7WorkflowData;
@@ -7,8 +7,8 @@ interface FieldDefinition {
   explanation: string;
 }
 
-export type Tm7ChecklistCategory = "upload" | "print_review";
-export type Tm7ChecklistStatus = "complete" | "missing" | "manual";
+export type Tm7ChecklistCategory = "supporting_document" | "print_review";
+export type Tm7ChecklistStatus = "checked" | "unchecked";
 
 export interface Tm7ChecklistItem {
   id: string;
@@ -17,16 +17,16 @@ export interface Tm7ChecklistItem {
   category: Tm7ChecklistCategory;
   required: boolean;
   status: Tm7ChecklistStatus;
-  documentTypes?: DocumentType[];
 }
 
 export interface Tm7DocumentChecklist {
   items: Tm7ChecklistItem[];
   summary: {
-    requiredUploads: number;
-    completedRequiredUploads: number;
-    missingRequiredUploads: number;
-    manualReviewItems: number;
+    requiredDocuments: number;
+    checkedRequiredDocuments: number;
+    remainingRequiredDocuments: number;
+    printChecks: number;
+    checkedPrintChecks: number;
   };
 }
 
@@ -36,7 +36,6 @@ interface ChecklistDefinition {
   description: string;
   category: Tm7ChecklistCategory;
   required: boolean;
-  documentTypes?: DocumentType[];
 }
 
 const profileFields: FieldDefinition[] = [
@@ -193,58 +192,51 @@ const checklistDefinitions: ChecklistDefinition[] = [
   {
     id: "passport",
     label: "Passport identity page",
-    description: "Upload the passport bio page and bring a signed copy.",
-    category: "upload",
-    required: true,
-    documentTypes: ["passport"]
+    description: "Bring the passport bio page and one signed copy.",
+    category: "supporting_document",
+    required: true
   },
   {
     id: "visa-page",
     label: "Current visa or extension page",
-    description: "Upload the current visa, extension, or permission-to-stay page.",
-    category: "upload",
-    required: true,
-    documentTypes: ["visa_page"]
+    description: "Bring the current visa, extension, or permission-to-stay page.",
+    category: "supporting_document",
+    required: true
   },
   {
     id: "arrival-stamp",
     label: "Latest Thailand entry stamp",
-    description: "Upload the most recent entry stamp used for this stay.",
-    category: "upload",
-    required: true,
-    documentTypes: ["arrival_stamp"]
+    description: "Bring the most recent entry stamp used for this stay.",
+    category: "supporting_document",
+    required: true
   },
   {
     id: "tm30",
     label: "TM.30 or address notification proof",
-    description: "Upload the address notification proof used by the local office.",
-    category: "upload",
-    required: true,
-    documentTypes: ["tm30"]
+    description: "Bring the address notification proof used by the local office.",
+    category: "supporting_document",
+    required: true
   },
   {
     id: "photo",
     label: "4 x 6 cm passport photo",
     description: "Attach a recent photo that matches the TM.7 photo box.",
-    category: "upload",
-    required: true,
-    documentTypes: ["photo"]
+    category: "supporting_document",
+    required: true
   },
   {
     id: "address-proof",
     label: "Thailand address proof",
-    description: "Upload rental, hotel, condo, or other local address evidence.",
-    category: "upload",
-    required: true,
-    documentTypes: ["address_proof"]
+    description: "Bring rental, hotel, condo, or other local address evidence.",
+    category: "supporting_document",
+    required: true
   },
   {
     id: "tm6-card",
     label: "TM.6 card copy",
-    description: "Only needed where the applicant still has an arrival/departure card.",
-    category: "upload",
-    required: false,
-    documentTypes: ["tm6_card"]
+    description: "Bring this only where the applicant still has an arrival/departure card.",
+    category: "supporting_document",
+    required: false
   },
   {
     id: "a4-scale",
@@ -314,28 +306,27 @@ export function getTm7FieldDefinitions(): FieldDefinition[] {
   return [...profileFields, ...workflowFields];
 }
 
-export function getTm7DocumentChecklist(documents: Pick<DocumentRecord, "type">[]): Tm7DocumentChecklist {
-  const uploadedTypes = new Set(documents.map((document) => document.type));
+export function getTm7DocumentChecklist(confirmedIds: string[] = []): Tm7DocumentChecklist {
+  const confirmed = new Set(confirmedIds);
   const items = checklistDefinitions.map((item) => {
-    const hasUpload = item.documentTypes?.some((type) => uploadedTypes.has(type)) ?? false;
-    const status: Tm7ChecklistStatus =
-      item.category === "print_review" ? "manual" : hasUpload ? "complete" : "missing";
-
+    const status: Tm7ChecklistStatus = confirmed.has(item.id) ? "checked" : "unchecked";
     return {
       ...item,
       status
     };
   });
-  const requiredUploadItems = items.filter((item) => item.category === "upload" && item.required);
-  const completedRequiredUploads = requiredUploadItems.filter((item) => item.status === "complete").length;
+  const requiredDocumentItems = items.filter((item) => item.category === "supporting_document" && item.required);
+  const checkedRequiredDocuments = requiredDocumentItems.filter((item) => item.status === "checked").length;
+  const printCheckItems = items.filter((item) => item.category === "print_review");
 
   return {
     items,
     summary: {
-      requiredUploads: requiredUploadItems.length,
-      completedRequiredUploads,
-      missingRequiredUploads: requiredUploadItems.length - completedRequiredUploads,
-      manualReviewItems: items.filter((item) => item.category === "print_review").length
+      requiredDocuments: requiredDocumentItems.length,
+      checkedRequiredDocuments,
+      remainingRequiredDocuments: requiredDocumentItems.length - checkedRequiredDocuments,
+      printChecks: printCheckItems.length,
+      checkedPrintChecks: printCheckItems.filter((item) => item.status === "checked").length
     }
   };
 }
