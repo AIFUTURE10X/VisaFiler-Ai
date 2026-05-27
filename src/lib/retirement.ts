@@ -1,4 +1,5 @@
 import type {
+  ClientProfile,
   ReEntryPreference,
   RetirementRouteOutcome,
   RetirementVisaStatus,
@@ -144,6 +145,19 @@ export function getRetirementCostEstimate(input: RetirementCostEstimateInput): R
 }
 
 export type RetirementFormFillStatus = "fillable" | "template_needed";
+export type RetirementFormFieldSource = "profile" | "workflow" | "computed" | "manual";
+
+export interface RetirementFormField {
+  id: string;
+  label: string;
+  source: RetirementFormFieldSource;
+  required: boolean;
+  profileKey?: keyof ClientProfile;
+  workflowKey?: keyof RetirementWorkflowData;
+  computedKey?: "fullName" | "thaiAddress";
+  defaultValue?: string;
+  inputType?: "text" | "date" | "number";
+}
 
 export interface RetirementFormItem {
   id: string;
@@ -152,6 +166,7 @@ export interface RetirementFormItem {
   description: string;
   stage: string;
   fillStatus: RetirementFormFillStatus;
+  fields: RetirementFormField[];
 }
 
 interface RetirementFormsInput {
@@ -160,13 +175,84 @@ interface RetirementFormsInput {
   reEntryPreference?: ReEntryPreference;
 }
 
+const profileField = (
+  id: string,
+  label: string,
+  profileKey: keyof ClientProfile,
+  inputType: RetirementFormField["inputType"] = "text"
+): RetirementFormField => ({
+  id,
+  label,
+  source: "profile",
+  profileKey,
+  inputType,
+  required: true
+});
+
+const workflowField = (
+  id: string,
+  label: string,
+  workflowKey: keyof RetirementWorkflowData,
+  inputType: RetirementFormField["inputType"] = "text"
+): RetirementFormField => ({
+  id,
+  label,
+  source: "workflow",
+  workflowKey,
+  inputType,
+  required: true
+});
+
+const manualField = (
+  id: string,
+  label: string,
+  defaultValue = "",
+  inputType: RetirementFormField["inputType"] = "text"
+): RetirementFormField => ({
+  id,
+  label,
+  source: "manual",
+  defaultValue,
+  inputType,
+  required: true
+});
+
+const computedField = (
+  id: string,
+  label: string,
+  computedKey: RetirementFormField["computedKey"]
+): RetirementFormField => ({
+  id,
+  label,
+  source: "computed",
+  computedKey,
+  inputType: "text",
+  required: true
+});
+
+const applicantIdentityFields: RetirementFormField[] = [
+  profileField("first-name", "First name", "legalFirstName"),
+  profileField("family-name", "Family name", "legalFamilyName"),
+  profileField("nationality", "Nationality", "nationality"),
+  profileField("passport-number", "Passport number", "passportNumber"),
+  profileField("date-of-birth", "Date of birth", "dateOfBirth", "date")
+];
+
 const tm7Form: RetirementFormItem = {
   id: "tm7",
   code: "TM.7",
   title: "TM.7 retirement extension form",
   description: "Uses the verified TM.7 packet engine with retirement extension details.",
   stage: "Extension",
-  fillStatus: "fillable"
+  fillStatus: "fillable",
+  fields: [
+    computedField("applicant-name", "Applicant name", "fullName"),
+    profileField("passport-number", "Passport number", "passportNumber"),
+    profileField("nationality", "Nationality", "nationality"),
+    computedField("thai-address", "Thailand address", "thaiAddress"),
+    manualField("extension-reason", "Extension reason", "Retirement extension"),
+    manualField("requested-days", "Requested extension days", "365", "number")
+  ]
 };
 
 const acknowledgementForms: RetirementFormItem[] = [
@@ -176,7 +262,14 @@ const acknowledgementForms: RetirementFormItem[] = [
     title: "STM.2 acknowledgement",
     description: "Acknowledgement of conditions for permitted continuation of stay.",
     stage: "Acknowledgement",
-    fillStatus: "template_needed"
+    fillStatus: "template_needed",
+    fields: [
+      computedField("applicant-name", "Applicant name", "fullName"),
+      workflowField("age", "Applicant age", "age", "number"),
+      profileField("nationality", "Nationality", "nationality"),
+      manualField("stay-reason", "Permitted stay reason", "Retirement extension"),
+      manualField("signed-date", "Signature date", "", "date")
+    ]
   },
   {
     id: "overstay",
@@ -184,7 +277,14 @@ const acknowledgementForms: RetirementFormItem[] = [
     title: "Overstay penalties acknowledgement",
     description: "Acknowledgement of penalties for a visa overstay.",
     stage: "Acknowledgement",
-    fillStatus: "template_needed"
+    fillStatus: "template_needed",
+    fields: [
+      computedField("applicant-name", "Applicant name", "fullName"),
+      profileField("passport-number", "Passport number", "passportNumber"),
+      profileField("nationality", "Nationality", "nationality"),
+      manualField("signed-at", "Signed at", "Phuket"),
+      manualField("signed-date", "Signature date", "", "date")
+    ]
   },
   {
     id: "stm11",
@@ -192,7 +292,14 @@ const acknowledgementForms: RetirementFormItem[] = [
     title: "STM.11 verification consent",
     description: "Consent for immigration to fact-check and verify application information.",
     stage: "Office dependent",
-    fillStatus: "template_needed"
+    fillStatus: "template_needed",
+    fields: [
+      computedField("applicant-name", "Applicant name", "fullName"),
+      profileField("passport-number", "Passport number", "passportNumber"),
+      profileField("nationality", "Nationality", "nationality"),
+      workflowField("immigration-office", "Immigration office province", "immigrationOfficeProvince"),
+      manualField("consent-date", "Consent date", "", "date")
+    ]
   }
 ];
 
@@ -212,7 +319,14 @@ export function getRetirementForms(input: RetirementFormsInput): RetirementFormI
             title: "TM.87 non-immigrant visa application",
             description: "Used when the applicant entered Thailand visa-exempt and needs Non-O status first.",
             stage: "Conversion",
-            fillStatus: "template_needed"
+            fillStatus: "template_needed",
+            fields: [
+              ...applicantIdentityFields,
+              workflowField("stay-until", "Current stay until", "currentStayUntil", "date"),
+              workflowField("financial-method", "Financial evidence method", "financialMethod"),
+              manualField("conversion-reason", "Conversion reason", "Retirement"),
+              computedField("thai-address", "Thailand address", "thaiAddress")
+            ]
           }
         : {
             id: "tm86",
@@ -220,7 +334,14 @@ export function getRetirementForms(input: RetirementFormsInput): RetirementFormI
             title: "TM.86 change of visa form",
             description: "Used when the applicant has a Tourist or Transit visa and needs Non-O status first.",
             stage: "Conversion",
-            fillStatus: "template_needed"
+            fillStatus: "template_needed",
+            fields: [
+              ...applicantIdentityFields,
+              workflowField("stay-until", "Current stay until", "currentStayUntil", "date"),
+              workflowField("financial-method", "Financial evidence method", "financialMethod"),
+              manualField("conversion-reason", "Conversion reason", "Retirement"),
+              computedField("thai-address", "Thailand address", "thaiAddress")
+            ]
           }
     );
   }
@@ -234,7 +355,16 @@ export function getRetirementForms(input: RetirementFormsInput): RetirementFormI
       title: "TM.8 re-entry permit form",
       description: "Only needed when the applicant wants to leave Thailand and preserve the permission to stay.",
       stage: "Travel",
-      fillStatus: "template_needed"
+      fillStatus: "template_needed",
+      fields: [
+        computedField("applicant-name", "Applicant name", "fullName"),
+        profileField("passport-number", "Passport number", "passportNumber"),
+        profileField("nationality", "Nationality", "nationality"),
+        workflowField("re-entry-type", "Re-entry type", "reEntryPreference"),
+        manualField("travel-destination", "Travel destination"),
+        manualField("departure-date", "Departure date", "", "date"),
+        manualField("return-date", "Return date", "", "date")
+      ]
     });
   }
 

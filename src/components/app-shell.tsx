@@ -20,6 +20,7 @@ import {
   getRetirementRoute,
   type RetirementChecklist,
   type RetirementCostEstimate,
+  type RetirementFormField,
   type RetirementFormItem,
   type RetirementRouteResult
 } from "@/lib/retirement";
@@ -134,6 +135,7 @@ export function AppShell({ initialData }: AppShellProps) {
     immigrationOfficeProvince: profile.province || "Phuket",
     checklistConfirmedIds: []
   });
+  const [retirementFormDrafts, setRetirementFormDrafts] = useState<Record<string, string>>({});
   const [busy, setBusy] = useState<string | null>(null);
   const [message, setMessage] = useState("Ready to build a TM.7 packet.");
 
@@ -294,6 +296,13 @@ export function AppShell({ initialData }: AppShellProps) {
         checklistConfirmedIds: Array.from(confirmed)
       };
     });
+  }
+
+  function updateRetirementFormDraft(formId: string, fieldId: string, value: string) {
+    setRetirementFormDrafts((current) => ({
+      ...current,
+      [`${formId}.${fieldId}`]: value
+    }));
   }
 
   async function extractDocument(document: DocumentRecord) {
@@ -499,8 +508,11 @@ export function AppShell({ initialData }: AppShellProps) {
               route={retirementRoute}
               cost={retirementCost}
               forms={retirementForms}
+              profile={profile}
               checklist={retirementChecklist}
+              formDrafts={retirementFormDrafts}
               onWorkflowChange={setRetirementWorkflow}
+              onFormDraftChange={updateRetirementFormDraft}
               onChecklistToggle={toggleRetirementChecklistItem}
               onOpenTm7={() => setActiveConsole("tm7")}
             />
@@ -701,8 +713,11 @@ function RetirementPanel({
   route,
   cost,
   forms,
+  profile,
   checklist,
+  formDrafts,
   onWorkflowChange,
+  onFormDraftChange,
   onChecklistToggle,
   onOpenTm7
 }: {
@@ -710,8 +725,11 @@ function RetirementPanel({
   route: RetirementRouteResult;
   cost: RetirementCostEstimate;
   forms: RetirementFormItem[];
+  profile: ClientProfile;
   checklist: RetirementChecklist;
+  formDrafts: Record<string, string>;
   onWorkflowChange: Dispatch<SetStateAction<RetirementWorkflowData>>;
+  onFormDraftChange: (formId: string, fieldId: string, value: string) => void;
   onChecklistToggle: (id: string, checked: boolean) => void;
   onOpenTm7: () => void;
 }) {
@@ -897,7 +915,14 @@ function RetirementPanel({
         </div>
       </div>
 
-      <RetirementFormsPanel forms={forms} onOpenTm7={onOpenTm7} />
+      <RetirementFormsPanel
+        forms={forms}
+        profile={profile}
+        workflow={workflow}
+        formDrafts={formDrafts}
+        onFieldChange={onFormDraftChange}
+        onOpenTm7={onOpenTm7}
+      />
 
       <div className="mt-5 border-t border-line pt-5">
         <div className="flex flex-col justify-between gap-2 sm:flex-row sm:items-start">
@@ -945,9 +970,17 @@ function RetirementPanel({
 
 function RetirementFormsPanel({
   forms,
+  profile,
+  workflow,
+  formDrafts,
+  onFieldChange,
   onOpenTm7
 }: {
   forms: RetirementFormItem[];
+  profile: ClientProfile;
+  workflow: RetirementWorkflowData;
+  formDrafts: Record<string, string>;
+  onFieldChange: (formId: string, fieldId: string, value: string) => void;
   onOpenTm7: () => void;
 }) {
   return (
@@ -967,35 +1000,59 @@ function RetirementFormsPanel({
           Fix the route blockers before preparing official forms.
         </div>
       ) : (
-        <div className="mt-4 grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
+        <div className="mt-4 grid grid-cols-1 gap-3">
           {forms.map((form) => {
             const isFillable = form.fillStatus === "fillable";
             return (
-              <div className="rounded-md border border-line bg-background p-4" key={form.id}>
-                <div className="flex flex-wrap items-center gap-2">
-                  <span className="rounded-full bg-primary-soft px-2 py-1 text-xs font-semibold text-primary">
-                    {form.code}
-                  </span>
-                  <span className="rounded-full bg-accent-soft px-2 py-1 text-xs font-semibold text-accent">
-                    {form.stage}
-                  </span>
+              <div
+                className="rounded-md border border-line bg-background p-4"
+                data-testid={`retirement-form-${form.id}`}
+                key={form.id}
+              >
+                <div className="flex flex-col justify-between gap-3 md:flex-row md:items-start">
+                  <div>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="rounded-full bg-primary-soft px-2 py-1 text-xs font-semibold text-primary">
+                        {form.code}
+                      </span>
+                      <span className="rounded-full bg-accent-soft px-2 py-1 text-xs font-semibold text-accent">
+                        {form.stage}
+                      </span>
+                    </div>
+                    <h5 className="mt-3 font-bold">{form.title}</h5>
+                    <p className="mt-1 text-sm text-muted">{form.description}</p>
+                    <p className="mt-2 text-xs font-semibold text-primary">Draft fields loaded</p>
+                  </div>
+                  <div className="shrink-0">
+                    {isFillable ? (
+                      <button
+                        className="rounded-md border border-primary bg-primary-soft px-3 py-2 text-sm font-semibold text-primary"
+                        type="button"
+                        onClick={onOpenTm7}
+                      >
+                        Open TM.7 workflow
+                      </button>
+                    ) : (
+                      <span className="inline-flex rounded-md border border-line px-3 py-2 text-sm font-semibold text-muted">
+                        PDF template mapping needed
+                      </span>
+                    )}
+                  </div>
                 </div>
-                <h5 className="mt-3 font-bold">{form.title}</h5>
-                <p className="mt-1 text-sm text-muted">{form.description}</p>
-                <div className="mt-4">
-                  {isFillable ? (
-                    <button
-                      className="rounded-md border border-primary bg-primary-soft px-3 py-2 text-sm font-semibold text-primary"
-                      type="button"
-                      onClick={onOpenTm7}
-                    >
-                      Open TM.7 workflow
-                    </button>
-                  ) : (
-                    <span className="inline-flex rounded-md border border-line px-3 py-2 text-sm font-semibold text-muted">
-                      Template mapping needed
-                    </span>
-                  )}
+
+                <div className="mt-4 grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
+                  {form.fields.map((field) => (
+                    <label className="text-sm font-semibold text-ink" key={field.id}>
+                      {field.label}
+                      <input
+                        className="mt-1 w-full rounded-md border-line bg-white"
+                        type={field.inputType ?? "text"}
+                        value={getRetirementFormFieldValue(form.id, field, profile, workflow, formDrafts)}
+                        placeholder={field.defaultValue}
+                        onChange={(event) => onFieldChange(form.id, field.id, event.target.value)}
+                      />
+                    </label>
+                  ))}
                 </div>
               </div>
             );
@@ -1004,6 +1061,57 @@ function RetirementFormsPanel({
       )}
     </div>
   );
+}
+
+function getRetirementFormFieldValue(
+  formId: string,
+  field: RetirementFormField,
+  profile: ClientProfile,
+  workflow: RetirementWorkflowData,
+  drafts: Record<string, string>
+) {
+  const draftKey = `${formId}.${field.id}`;
+  if (drafts[draftKey] !== undefined) {
+    return drafts[draftKey];
+  }
+
+  if (field.source === "profile" && field.profileKey) {
+    return String(profile[field.profileKey] ?? "");
+  }
+
+  if (field.source === "workflow" && field.workflowKey) {
+    return formatWorkflowFieldValue(workflow[field.workflowKey]);
+  }
+
+  if (field.source === "computed") {
+    if (field.computedKey === "fullName") {
+      return [profile.legalFirstName, profile.legalMiddleName, profile.legalFamilyName].filter(Boolean).join(" ");
+    }
+
+    if (field.computedKey === "thaiAddress") {
+      return [
+        profile.thaiAddressNumber,
+        profile.thaiAddressLine,
+        profile.road,
+        profile.subDistrict,
+        profile.district,
+        profile.province,
+        profile.postCode
+      ]
+        .filter(Boolean)
+        .join(", ");
+    }
+  }
+
+  return field.defaultValue ?? "";
+}
+
+function formatWorkflowFieldValue(value: RetirementWorkflowData[keyof RetirementWorkflowData]) {
+  if (value === undefined || value === null) return "";
+  if (typeof value === "boolean") return value ? "Yes" : "No";
+  if (typeof value === "number") return String(value);
+  if (Array.isArray(value)) return value.join(", ");
+  return value.replaceAll("_", " ");
 }
 
 function Field({

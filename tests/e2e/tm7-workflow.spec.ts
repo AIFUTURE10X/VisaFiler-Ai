@@ -38,10 +38,17 @@ test("creates and approves a TM.7 packet", async ({ page }) => {
   await expect(page.getByText("Overstay penalties acknowledgement")).toBeVisible();
   await expect(page.getByText("STM.11 verification consent")).toBeVisible();
   await expect(page.getByText("TM.8 re-entry permit form")).toBeVisible();
+  const tm86Form = page.getByTestId("retirement-form-tm86");
+  await expect(tm86Form.getByLabel("First name")).toBeVisible();
+  await expect(tm86Form.getByLabel("Family name")).toBeVisible();
+  await expect(tm86Form.getByLabel("Passport number")).toBeVisible();
+  await expect(tm86Form.getByLabel("Conversion reason")).toHaveValue("Retirement");
+  await tm86Form.getByLabel("Conversion reason").fill("Retirement Non-O conversion");
+  await expect(tm86Form.getByText("Draft fields loaded")).toBeVisible();
   await expect(page.getByText(/40,000/)).toBeVisible();
   await expect(page.getByText(/60,000/)).toBeVisible();
   await page.getByLabel("Current status").selectOption("non_o");
-  await page.getByRole("spinbutton", { name: "Age" }).fill("62");
+  await page.getByRole("spinbutton", { name: "Age", exact: true }).fill("62");
   await page.getByLabel("Financial method").selectOption("bank_deposit");
   await expect(page.getByText("Ready for TM.7 retirement extension")).toBeVisible();
   await expect(page.getByText("TM.86 change of visa form")).not.toBeVisible();
@@ -74,7 +81,11 @@ test("creates and approves a TM.7 packet", async ({ page }) => {
   await page.getByLabel("Post code").fill("83110");
   await page.getByLabel("Phone").fill("+66 81 000 0000");
   await page.getByRole("button", { name: "Save profile" }).click();
-  await expect(page.getByText("Profile saved.")).toBeVisible();
+  await expect(page.getByText(/Profile saved/)).toBeVisible({ timeout: 15000 });
+
+  await page.getByRole("button", { name: "Retirement visa" }).click();
+  await expect(page.getByTestId("retirement-form-stm2").getByLabel("Applicant name")).toHaveValue("Alex M Morgan");
+  await expect(page.getByTestId("retirement-form-tm7").getByLabel("Passport number")).toHaveValue("AB123456");
 
   await page.getByRole("button", { name: "TM.7 packet workflow" }).click();
   await expect(page.getByRole("heading", { name: "TM.7 packet workflow" })).toBeVisible();

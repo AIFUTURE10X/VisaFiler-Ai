@@ -116,6 +116,8 @@ describe("retirement visa route classifier", () => {
       title: "TM.7 retirement extension form",
       fillStatus: "fillable"
     });
+    expect(forms.every((form) => form.fields.length > 0)).toBe(true);
+    expect(forms.find((form) => form.id === "stm2")?.fields.map((field) => field.label)).toContain("Applicant name");
 
     expect(
       getRetirementChecklist({
@@ -136,6 +138,15 @@ describe("retirement visa route classifier", () => {
       code: "TM.86",
       title: "TM.86 change of visa form"
     });
+    expect(
+      getRetirementForms({
+        outcome: "conversion_then_extension",
+        currentStatus: "tourist_visa",
+        reEntryPreference: "none"
+      })[0].fields.map((field) => field.label)
+    ).toEqual(
+      expect.arrayContaining(["First name", "Family name", "Passport number", "Conversion reason"])
+    );
 
     expect(
       getRetirementForms({

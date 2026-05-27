@@ -465,7 +465,7 @@ const retirementChecklist = useMemo(
 
 - [x] **Step 4: Render retirement route console**
 
-Add a dedicated sidebar console with heading `Retirement visa self-filing`, route fields, outcome card, official vs agent cost card, route-specific form cards, and a supporting-document checklist grid. Keep TM.7, Retirement, Profile vault, and Document vault as separate workspaces so each workflow stays focused. Use normal inputs/selects/checkboxes. Keep the copy concise:
+Add a dedicated sidebar console with heading `Retirement visa self-filing`, route fields, outcome card, official vs agent cost card, editable route-specific draft form panels, and a supporting-document checklist grid. Keep TM.7, Retirement, Profile vault, and Document vault as separate workspaces so each workflow stays focused. Use normal inputs/selects/checkboxes. Keep the copy concise:
 
 ```tsx
 <section id="retirement" className="rounded-md border border-line bg-surface p-5 shadow-soft">
