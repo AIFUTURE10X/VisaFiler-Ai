@@ -11,6 +11,15 @@ test("creates and approves a TM.7 packet", async ({ page }) => {
   await expect(page.getByRole("heading", { name: "VisaFiler AI" })).toBeVisible();
   await expect(page.locator("body")).toHaveCSS("background-color", "rgb(246, 247, 244)");
   await expect(page.getByRole("heading", { name: "TM.7 packet workflow" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Retirement visa self-filing" })).toBeVisible();
+  await expect(page.getByText("Agent-fee saver workflow")).toBeVisible();
+  await expect(page.getByText("Conversion first, then retirement extension")).toBeVisible();
+  await expect(page.getByText(/40,000/)).toBeVisible();
+  await expect(page.getByText(/60,000/)).toBeVisible();
+  await page.getByLabel("Current status").selectOption("non_o");
+  await page.getByRole("spinbutton", { name: "Age" }).fill("62");
+  await page.getByLabel("Financial method").selectOption("bank_deposit");
+  await expect(page.getByText("Ready for TM.7 retirement extension")).toBeVisible();
   await expect(
     page.getByText("TM.7 is the Thai immigration form for extending a temporary stay, including a 30-day visa extension.")
   ).toBeVisible();

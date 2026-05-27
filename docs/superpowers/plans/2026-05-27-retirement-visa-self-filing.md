@@ -25,7 +25,7 @@
 **Files:**
 - Modify: `src/lib/types.ts`
 
-- [ ] **Step 1: Add workflow-specific union types**
+- [x] **Step 1: Add workflow-specific union types**
 
 Add these exports near the existing workflow types:
 
@@ -65,7 +65,7 @@ export interface RetirementWorkflowData {
 }
 ```
 
-- [ ] **Step 2: Run type check through build**
+- [x] **Step 2: Run type check through build**
 
 Run: `pnpm build`
 
@@ -77,7 +77,7 @@ Expected: Existing app still builds because the new types are additive.
 - Create: `src/lib/retirement.ts`
 - Test: `src/lib/retirement.test.ts`
 
-- [ ] **Step 1: Write failing route tests**
+- [x] **Step 1: Write failing route tests**
 
 Create `src/lib/retirement.test.ts`:
 
@@ -157,13 +157,13 @@ describe("retirement visa route classifier", () => {
 });
 ```
 
-- [ ] **Step 2: Run test and confirm failure**
+- [x] **Step 2: Run test and confirm failure**
 
 Run: `pnpm exec vitest run src/lib/retirement.test.ts`
 
 Expected: FAIL because `src/lib/retirement.ts` does not exist.
 
-- [ ] **Step 3: Implement route classifier**
+- [x] **Step 3: Implement route classifier**
 
 Create `src/lib/retirement.ts`:
 
@@ -274,7 +274,7 @@ export function getRetirementRoute(input: RetirementWorkflowData): RetirementRou
 }
 ```
 
-- [ ] **Step 4: Run route tests**
+- [x] **Step 4: Run route tests**
 
 Run: `pnpm exec vitest run src/lib/retirement.test.ts`
 
@@ -286,7 +286,7 @@ Expected: PASS.
 - Modify: `src/lib/retirement.ts`
 - Test: `src/lib/retirement.test.ts`
 
-- [ ] **Step 1: Add failing cost/checklist tests**
+- [x] **Step 1: Add failing cost/checklist tests**
 
 Change the first import in `src/lib/retirement.test.ts`:
 
@@ -330,7 +330,7 @@ test("adds multiple re-entry checklist item when requested", () => {
 });
 ```
 
-- [ ] **Step 2: Implement helpers**
+- [x] **Step 2: Implement helpers**
 
 Add exports in `src/lib/retirement.ts`:
 
@@ -398,7 +398,7 @@ export function getRetirementChecklist(input: ChecklistInput) {
 }
 ```
 
-- [ ] **Step 3: Run tests**
+- [x] **Step 3: Run tests**
 
 Run: `pnpm exec vitest run src/lib/retirement.test.ts`
 
@@ -409,7 +409,7 @@ Expected: PASS.
 **Files:**
 - Modify: `src/components/app-shell.tsx`
 
-- [ ] **Step 1: Import helpers and types**
+- [x] **Step 1: Import helpers and types**
 
 Add imports:
 
@@ -422,7 +422,7 @@ import {
 import type { RetirementWorkflowData } from "@/lib/types";
 ```
 
-- [ ] **Step 2: Add default retirement state**
+- [x] **Step 2: Add default retirement state**
 
 Inside `AppShell`:
 
@@ -440,7 +440,7 @@ const [retirementWorkflow, setRetirementWorkflow] = useState<RetirementWorkflowD
 });
 ```
 
-- [ ] **Step 3: Derive route, cost, and checklist**
+- [x] **Step 3: Derive route, cost, and checklist**
 
 Inside `AppShell`:
 
@@ -463,7 +463,7 @@ const retirementChecklist = useMemo(
 );
 ```
 
-- [ ] **Step 4: Render retirement section below TM.7 workflow**
+- [x] **Step 4: Render retirement section below TM.7 workflow**
 
 Add a section with heading `Retirement visa self-filing`, route fields, outcome card, official vs agent cost card, and checklist grid. Use normal inputs/selects/checkboxes. Keep the copy concise:
 
@@ -480,7 +480,7 @@ Add a section with heading `Retirement visa self-filing`, route fields, outcome 
 </section>
 ```
 
-- [ ] **Step 5: Run lint**
+- [x] **Step 5: Run lint**
 
 Run: `pnpm lint`
 
@@ -491,7 +491,7 @@ Expected: PASS.
 **Files:**
 - Modify: `tests/e2e/tm7-workflow.spec.ts`
 
-- [ ] **Step 1: Add UI assertions**
+- [x] **Step 1: Add UI assertions**
 
 Add after the initial TM.7 heading assertions:
 
@@ -503,7 +503,7 @@ await expect(page.getByText(/40,000/)).toBeVisible();
 await expect(page.getByText(/60,000/)).toBeVisible();
 ```
 
-- [ ] **Step 2: Test Non-O route switch**
+- [x] **Step 2: Test Non-O route switch**
 
 Add:
 
@@ -514,7 +514,7 @@ await page.getByLabel("Financial method").selectOption("bank_deposit");
 await expect(page.getByText("Ready for TM.7 retirement extension")).toBeVisible();
 ```
 
-- [ ] **Step 3: Run e2e**
+- [x] **Step 3: Run e2e**
 
 Run: `pnpm e2e`
 
@@ -527,7 +527,7 @@ Expected: PASS.
 - Modify: `docs/prd.md`
 - Modify: `docs/pricing-strategy.md`
 
-- [ ] **Step 1: README**
+- [x] **Step 1: README**
 
 Add a Key Documents link to this plan and the design spec:
 
@@ -536,11 +536,11 @@ Add a Key Documents link to this plan and the design spec:
 - [Retirement Visa Self-Filing Implementation Plan](docs/superpowers/plans/2026-05-27-retirement-visa-self-filing.md)
 ```
 
-- [ ] **Step 2: PRD**
+- [x] **Step 2: PRD**
 
 In the Thailand Long-Stay section, mark retirement visa extension packets as the next planned module and mention route checker support for TM.86/TM.87, TM.7, and TM.8.
 
-- [ ] **Step 3: Pricing**
+- [x] **Step 3: Pricing**
 
 Add individual pricing test copy:
 
@@ -553,7 +553,7 @@ Retirement self-filing packet: test THB 990 to THB 1,490 as a high-value one-off
 **Files:**
 - All modified implementation and documentation files.
 
-- [ ] **Step 1: Full verification**
+- [x] **Step 1: Full verification**
 
 Run:
 
@@ -566,15 +566,15 @@ pnpm e2e
 
 Expected: all pass.
 
-- [ ] **Step 2: Commit**
+- [x] **Step 2: Commit**
 
 Run:
 
 ```powershell
 git status --short
-git add src/lib/retirement.ts src/lib/retirement.test.ts src/lib/types.ts src/components/app-shell.tsx tests/e2e/tm7-workflow.spec.ts README.md docs/prd.md docs/pricing-strategy.md
+git add src/lib/retirement.ts src/lib/retirement.test.ts src/lib/types.ts src/components/app-shell.tsx tests/e2e/tm7-workflow.spec.ts README.md docs/prd.md docs/superpowers/plans/2026-05-27-retirement-visa-self-filing.md
 git commit -m "feat: add retirement self-filing route planner"
-git push origin main
+git push origin codex/retirement-self-filing
 ```
 
-Expected: branch `main` pushed to `origin`.
+Expected: branch `codex/retirement-self-filing` pushed to `origin`.

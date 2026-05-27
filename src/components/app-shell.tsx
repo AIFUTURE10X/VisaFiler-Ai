@@ -11,16 +11,32 @@ import {
   Sparkles,
   Upload
 } from "lucide-react";
-import { useMemo, useState } from "react";
+import { type Dispatch, type SetStateAction, useMemo, useState } from "react";
 import { getAiFieldExplanation } from "@/lib/ai";
+import {
+  getRetirementChecklist,
+  getRetirementCostEstimate,
+  getRetirementRoute,
+  type RetirementChecklist,
+  type RetirementCostEstimate,
+  type RetirementRouteResult
+} from "@/lib/retirement";
 import { getTm7DocumentChecklist, getTm7Readiness, type Tm7DocumentChecklist } from "@/lib/tm7";
-import type { AppData, ClientProfile, DocumentRecord, FormPacket, Tm7WorkflowData } from "@/lib/types";
+import type { AppData, ClientProfile, DocumentRecord, FormPacket, RetirementWorkflowData, Tm7WorkflowData } from "@/lib/types";
 
 interface AppShellProps {
   initialData: AppData;
 }
 
 const now = () => new Date().toISOString();
+
+const defaultStayUntil = () => {
+  const date = new Date();
+  date.setDate(date.getDate() + 30);
+  return date.toISOString().slice(0, 10);
+};
+
+const formatThb = (value: number) => `${value.toLocaleString("en-US")} THB`;
 
 const blankProfile = (): ClientProfile => ({
   id: "draft",
@@ -97,6 +113,17 @@ export function AppShell({ initialData }: AppShellProps) {
     }
   );
   const [documentType, setDocumentType] = useState("passport");
+  const [retirementWorkflow, setRetirementWorkflow] = useState<RetirementWorkflowData>({
+    age: 50,
+    currentStatus: "tourist_visa",
+    currentStayUntil: defaultStayUntil(),
+    hasOverstay: false,
+    hasThaiBankAccount: true,
+    financialMethod: "bank_deposit",
+    reEntryPreference: "multiple",
+    immigrationOfficeProvince: profile.province || "Phuket",
+    checklistConfirmedIds: []
+  });
   const [busy, setBusy] = useState<string | null>(null);
   const [message, setMessage] = useState("Ready to build a TM.7 packet.");
 
@@ -104,6 +131,24 @@ export function AppShell({ initialData }: AppShellProps) {
   const checklist = useMemo(
     () => getTm7DocumentChecklist(workflow.documentChecklistConfirmedIds),
     [workflow.documentChecklistConfirmedIds]
+  );
+  const retirementRoute = useMemo(() => getRetirementRoute(retirementWorkflow), [retirementWorkflow]);
+  const retirementCost = useMemo(
+    () =>
+      getRetirementCostEstimate({
+        route: retirementRoute.outcome,
+        reEntryPreference: retirementWorkflow.reEntryPreference
+      }),
+    [retirementRoute.outcome, retirementWorkflow.reEntryPreference]
+  );
+  const retirementChecklist = useMemo(
+    () =>
+      getRetirementChecklist({
+        outcome: retirementRoute.outcome,
+        reEntryPreference: retirementWorkflow.reEntryPreference,
+        confirmedIds: retirementWorkflow.checklistConfirmedIds
+      }),
+    [retirementRoute.outcome, retirementWorkflow.reEntryPreference, retirementWorkflow.checklistConfirmedIds]
   );
   const latestPacketReady = packet?.status === "ready_for_review" || packet?.status === "approved";
 
@@ -216,6 +261,22 @@ export function AppShell({ initialData }: AppShellProps) {
     });
   }
 
+  function toggleRetirementChecklistItem(id: string, checked: boolean) {
+    setRetirementWorkflow((current) => {
+      const confirmed = new Set(current.checklistConfirmedIds ?? []);
+      if (checked) {
+        confirmed.add(id);
+      } else {
+        confirmed.delete(id);
+      }
+
+      return {
+        ...current,
+        checklistConfirmedIds: Array.from(confirmed)
+      };
+    });
+  }
+
   async function extractDocument(document: DocumentRecord) {
     setBusy(document.id);
     setMessage("Running AI extraction for review...");
@@ -248,6 +309,10 @@ export function AppShell({ initialData }: AppShellProps) {
             <a className="flex items-center gap-2 rounded-md bg-primary-soft px-3 py-2 text-primary" href="#workflow">
               <FileCheck2 className="h-4 w-4" aria-hidden />
               TM.7 packet workflow
+            </a>
+            <a className="flex items-center gap-2 rounded-md px-3 py-2 text-muted" href="#retirement">
+              <CheckCircle2 className="h-4 w-4" aria-hidden />
+              Retirement route
             </a>
             <a className="flex items-center gap-2 rounded-md px-3 py-2 text-muted" href="#profile">
               <FileText className="h-4 w-4" aria-hidden />
@@ -371,6 +436,15 @@ export function AppShell({ initialData }: AppShellProps) {
               </div>
             </div>
           </section>
+
+          <RetirementPanel
+            workflow={retirementWorkflow}
+            route={retirementRoute}
+            cost={retirementCost}
+            checklist={retirementChecklist}
+            onWorkflowChange={setRetirementWorkflow}
+            onChecklistToggle={toggleRetirementChecklistItem}
+          />
 
           <section id="profile" className="rounded-md border border-line bg-surface p-5 shadow-soft">
             <div className="mb-4 flex items-center justify-between">
@@ -572,6 +646,247 @@ function ChecklistPanel({
         })}
       </div>
     </div>
+  );
+}
+
+function RetirementPanel({
+  workflow,
+  route,
+  cost,
+  checklist,
+  onWorkflowChange,
+  onChecklistToggle
+}: {
+  workflow: RetirementWorkflowData;
+  route: RetirementRouteResult;
+  cost: RetirementCostEstimate;
+  checklist: RetirementChecklist;
+  onWorkflowChange: Dispatch<SetStateAction<RetirementWorkflowData>>;
+  onChecklistToggle: (id: string, checked: boolean) => void;
+}) {
+  const routeStatus = route.canSelfFile ? "Self-fileable" : "Needs attention";
+
+  return (
+    <section id="retirement" className="rounded-md border border-line bg-surface p-5 shadow-soft">
+      <div className="mb-4 flex flex-col justify-between gap-3 md:flex-row md:items-start">
+        <div>
+          <p className="text-sm font-semibold text-primary">Agent-fee saver workflow</p>
+          <h3 className="text-xl font-bold">Retirement visa self-filing</h3>
+          <p className="mt-1 text-sm text-muted">
+            Check whether a qualified applicant can prepare the retirement route without a full agent package.
+          </p>
+        </div>
+        <span
+          className={`w-fit rounded-full px-3 py-1 text-sm font-semibold ${
+            route.canSelfFile ? "bg-primary-soft text-primary" : "bg-accent-soft text-accent"
+          }`}
+        >
+          {routeStatus}
+        </span>
+      </div>
+
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
+        <label className="text-sm font-semibold text-ink">
+          Age
+          <input
+            className="mt-1 w-full rounded-md border-line bg-white"
+            min="0"
+            type="number"
+            value={workflow.age ?? ""}
+            onChange={(event) =>
+              onWorkflowChange((current) => ({
+                ...current,
+                age: event.target.value ? Number(event.target.value) : undefined
+              }))
+            }
+          />
+        </label>
+
+        <label className="text-sm font-semibold text-ink">
+          Current status
+          <select
+            className="mt-1 w-full rounded-md border-line bg-white"
+            value={workflow.currentStatus ?? "unknown"}
+            onChange={(event) =>
+              onWorkflowChange((current) => ({
+                ...current,
+                currentStatus: event.target.value as RetirementWorkflowData["currentStatus"]
+              }))
+            }
+          >
+            <option value="tourist_visa">Tourist visa</option>
+            <option value="visa_exempt">Visa exempt</option>
+            <option value="non_o">Non-Immigrant O</option>
+            <option value="non_oa">Non-Immigrant O-A</option>
+            <option value="other">Other</option>
+            <option value="unknown">Not sure</option>
+          </select>
+        </label>
+
+        <label className="text-sm font-semibold text-ink">
+          Current stay until
+          <input
+            className="mt-1 w-full rounded-md border-line bg-white"
+            type="date"
+            value={workflow.currentStayUntil ?? ""}
+            onChange={(event) =>
+              onWorkflowChange((current) => ({ ...current, currentStayUntil: event.target.value }))
+            }
+          />
+        </label>
+
+        <label className="text-sm font-semibold text-ink">
+          Financial method
+          <select
+            className="mt-1 w-full rounded-md border-line bg-white"
+            value={workflow.financialMethod ?? "not_sure"}
+            onChange={(event) =>
+              onWorkflowChange((current) => ({
+                ...current,
+                financialMethod: event.target.value as RetirementWorkflowData["financialMethod"]
+              }))
+            }
+          >
+            <option value="bank_deposit">800,000 THB deposit</option>
+            <option value="monthly_income">65,000 THB monthly income</option>
+            <option value="combination">Combination method</option>
+            <option value="not_sure">Not sure</option>
+          </select>
+        </label>
+      </div>
+
+      <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-3">
+        <label className="flex items-start gap-3 rounded-md border border-line bg-background p-3 text-sm font-semibold">
+          <input
+            className="mt-1 h-5 w-5 rounded border-line text-primary focus:ring-focus"
+            type="checkbox"
+            checked={Boolean(workflow.hasThaiBankAccount)}
+            onChange={(event) =>
+              onWorkflowChange((current) => ({ ...current, hasThaiBankAccount: event.target.checked }))
+            }
+          />
+          Thai bank account in applicant name
+        </label>
+        <label className="flex items-start gap-3 rounded-md border border-line bg-background p-3 text-sm font-semibold">
+          <input
+            className="mt-1 h-5 w-5 rounded border-line text-primary focus:ring-focus"
+            type="checkbox"
+            checked={Boolean(workflow.hasOverstay)}
+            onChange={(event) =>
+              onWorkflowChange((current) => ({ ...current, hasOverstay: event.target.checked }))
+            }
+          />
+          Applicant is in overstay
+        </label>
+        <label className="text-sm font-semibold text-ink">
+          Re-entry permit
+          <select
+            className="mt-1 w-full rounded-md border-line bg-white"
+            value={workflow.reEntryPreference ?? "none"}
+            onChange={(event) =>
+              onWorkflowChange((current) => ({
+                ...current,
+                reEntryPreference: event.target.value as RetirementWorkflowData["reEntryPreference"]
+              }))
+            }
+          >
+            <option value="none">No re-entry</option>
+            <option value="single">Single re-entry</option>
+            <option value="multiple">Multiple re-entry</option>
+          </select>
+        </label>
+      </div>
+
+      <div className="mt-5 grid grid-cols-1 gap-4 lg:grid-cols-[1.2fr_0.8fr]">
+        <div className="rounded-md border border-line bg-background p-4">
+          <div className="flex flex-col justify-between gap-2 sm:flex-row sm:items-start">
+            <div>
+              <h4 className="font-bold">{route.title}</h4>
+              <p className="mt-1 text-sm text-muted">{route.summary}</p>
+            </div>
+            <span className="w-fit rounded-full bg-primary-soft px-2 py-1 text-xs font-semibold text-primary">
+              {route.primaryFormCodes.length ? route.primaryFormCodes.join(" + ") : "Confirm route"}
+            </span>
+          </div>
+          {route.blockers.length ? (
+            <div className="mt-3 rounded-md bg-accent-soft p-3 text-sm text-accent">
+              <p className="font-semibold">Fix before self-filing</p>
+              <ul className="mt-2 list-inside list-disc space-y-1">
+                {route.blockers.map((blocker) => (
+                  <li key={blocker}>{blocker}</li>
+                ))}
+              </ul>
+            </div>
+          ) : null}
+          <p className="mt-3 text-xs text-muted">
+            VisaFiler prepares paperwork and checklists. It does not guarantee approval or replace local-office
+            confirmation.
+          </p>
+        </div>
+
+        <div className="rounded-md border border-line bg-background p-4">
+          <h4 className="font-bold">DIY vs agent estimate</h4>
+          <div className="mt-3 grid grid-cols-2 gap-3 text-sm">
+            <div>
+              <p className="text-muted">Official fees</p>
+              <p className="text-lg font-bold text-ink">{formatThb(cost.officialFees)}</p>
+            </div>
+            <div>
+              <p className="text-muted">Agent package</p>
+              <p className="text-lg font-bold text-ink">
+                {formatThb(cost.agentLow)}-{formatThb(cost.agentHigh)}
+              </p>
+            </div>
+          </div>
+          <p className="mt-3 rounded-md bg-primary-soft p-3 text-sm font-semibold text-primary">
+            {route.canSelfFile
+              ? `Estimated saving: ${formatThb(cost.savingsLow)}-${formatThb(cost.savingsHigh)}`
+              : "Resolve the route blockers before estimating self-filing savings."}
+          </p>
+        </div>
+      </div>
+
+      <div className="mt-5 border-t border-line pt-5">
+        <div className="flex flex-col justify-between gap-2 sm:flex-row sm:items-start">
+          <div>
+            <h4 className="font-bold">Retirement document checklist</h4>
+            <p className="text-sm text-muted">
+              {checklist.summary.checkedRequired}/{checklist.summary.totalRequired} required items checked
+            </p>
+          </div>
+          <span className="w-fit rounded-full bg-primary-soft px-2 py-1 text-xs font-semibold text-primary">
+            Uploads optional
+          </span>
+        </div>
+        <div className="mt-4 grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
+          {checklist.items.map((item) => {
+            const isChecked = item.status === "checked";
+            const checkboxId = `retirement-checklist-${item.id}`;
+            return (
+              <label
+                className={`flex items-start gap-3 rounded-md border p-3 text-sm transition-colors ${
+                  isChecked ? "border-primary bg-primary-soft/40" : "border-line bg-white"
+                }`}
+                htmlFor={checkboxId}
+                key={item.id}
+              >
+                <input
+                  id={checkboxId}
+                  className="mt-0.5 h-5 w-5 shrink-0 rounded border-line text-primary focus:ring-focus"
+                  type="checkbox"
+                  checked={isChecked}
+                  onChange={(event) => onChecklistToggle(item.id, event.target.checked)}
+                />
+                <span>
+                  <span className="block font-semibold">{item.label}</span>
+                  <span className="mt-1 block text-muted">{isChecked ? "Checked" : "Bring to immigration"}</span>
+                </span>
+              </label>
+            );
+          })}
+        </div>
+      </div>
+    </section>
   );
 }
 

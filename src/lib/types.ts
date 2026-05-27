@@ -46,6 +46,40 @@ export interface Tm7WorkflowData {
   documentChecklistConfirmedIds?: string[];
 }
 
+export type RetirementVisaStatus =
+  | "tourist_visa"
+  | "visa_exempt"
+  | "non_o"
+  | "non_oa"
+  | "other"
+  | "unknown";
+
+export type RetirementFinancialMethod =
+  | "bank_deposit"
+  | "monthly_income"
+  | "combination"
+  | "not_sure";
+
+export type ReEntryPreference = "none" | "single" | "multiple";
+
+export type RetirementRouteOutcome =
+  | "tm7_extension"
+  | "conversion_then_extension"
+  | "not_ready"
+  | "high_risk";
+
+export interface RetirementWorkflowData {
+  age?: number;
+  currentStatus?: RetirementVisaStatus;
+  currentStayUntil?: string;
+  hasOverstay?: boolean;
+  hasThaiBankAccount?: boolean;
+  financialMethod?: RetirementFinancialMethod;
+  reEntryPreference?: ReEntryPreference;
+  immigrationOfficeProvince?: string;
+  checklistConfirmedIds?: string[];
+}
+
 export interface MissingField {
   key: keyof ClientProfile | keyof Tm7WorkflowData | string;
   label: string;

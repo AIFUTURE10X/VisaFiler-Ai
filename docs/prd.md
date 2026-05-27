@@ -547,7 +547,7 @@ Thailand remains the first market. Expand only after the TM.7 workflow is reliab
 **Phase 2: Thailand Long-Stay**
 
 - Retirement visa extension packets.
-  - Next planned module: retirement self-filing route checker covering TM.86/TM.87 conversion, TM.7 retirement extension, TM.8 re-entry permit, realistic DIY-vs-agent cost comparison, and checklist-only supporting documents.
+  - Initial module implemented: retirement self-filing route checker covering TM.86/TM.87 conversion, TM.7 retirement extension, TM.8 re-entry permit, realistic DIY-vs-agent cost comparison, and checklist-only supporting documents.
 - Marriage/family visa packet support.
 - Education visa support packet.
 - DTV / long-stay support checklist where applicable.
