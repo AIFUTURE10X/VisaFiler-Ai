@@ -11,15 +11,7 @@ test("creates and approves a TM.7 packet", async ({ page }) => {
   await expect(page.getByRole("heading", { name: "VisaFiler AI" })).toBeVisible();
   await expect(page.locator("body")).toHaveCSS("background-color", "rgb(246, 247, 244)");
   await expect(page.getByRole("heading", { name: "TM.7 packet workflow" })).toBeVisible();
-  await expect(page.getByRole("heading", { name: "Retirement visa self-filing" })).toBeVisible();
-  await expect(page.getByText("Agent-fee saver workflow")).toBeVisible();
-  await expect(page.getByText("Conversion first, then retirement extension")).toBeVisible();
-  await expect(page.getByText(/40,000/)).toBeVisible();
-  await expect(page.getByText(/60,000/)).toBeVisible();
-  await page.getByLabel("Current status").selectOption("non_o");
-  await page.getByRole("spinbutton", { name: "Age" }).fill("62");
-  await page.getByLabel("Financial method").selectOption("bank_deposit");
-  await expect(page.getByText("Ready for TM.7 retirement extension")).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Retirement visa self-filing" })).not.toBeVisible();
   await expect(
     page.getByText("TM.7 is the Thai immigration form for extending a temporary stay, including a 30-day visa extension.")
   ).toBeVisible();
@@ -35,6 +27,20 @@ test("creates and approves a TM.7 packet", async ({ page }) => {
     expect(box?.width).toBeGreaterThan(600);
   }).toPass();
 
+  await page.getByRole("button", { name: "Retirement visa" }).click();
+  await expect(page.getByRole("heading", { name: "Retirement visa self-filing" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "TM.7 packet workflow" })).not.toBeVisible();
+  await expect(page.getByText("Agent-fee saver workflow")).toBeVisible();
+  await expect(page.getByText("Conversion first, then retirement extension")).toBeVisible();
+  await expect(page.getByText(/40,000/)).toBeVisible();
+  await expect(page.getByText(/60,000/)).toBeVisible();
+  await page.getByLabel("Current status").selectOption("non_o");
+  await page.getByRole("spinbutton", { name: "Age" }).fill("62");
+  await page.getByLabel("Financial method").selectOption("bank_deposit");
+  await expect(page.getByText("Ready for TM.7 retirement extension")).toBeVisible();
+
+  await page.getByRole("button", { name: "Profile vault" }).click();
+  await expect(page.getByRole("heading", { name: "Profile vault" })).toBeVisible();
   await page.getByLabel("First name").fill("Alex");
   await page.getByLabel("Middle name").fill("M");
   await page.getByLabel("Family name").fill("Morgan");
@@ -59,7 +65,10 @@ test("creates and approves a TM.7 packet", async ({ page }) => {
   await page.getByLabel("Post code").fill("83110");
   await page.getByLabel("Phone").fill("+66 81 000 0000");
   await page.getByRole("button", { name: "Save profile" }).click();
+  await expect(page.getByText("Profile saved.")).toBeVisible();
 
+  await page.getByRole("button", { name: "TM.7 packet workflow" }).click();
+  await expect(page.getByRole("heading", { name: "TM.7 packet workflow" })).toBeVisible();
   await page.getByLabel("Written at").fill("Phuket");
   await page.getByLabel("Application date").fill("2026-05-25");
   await page.getByLabel("Reason for extension").fill("Retirement extension");
@@ -71,9 +80,11 @@ test("creates and approves a TM.7 packet", async ({ page }) => {
   await expect(previewFrame).toBeVisible();
   const firstPreviewSrc = await previewFrame.getAttribute("src");
 
+  await page.getByRole("button", { name: "Profile vault" }).click();
   await page.getByLabel("Nationality").fill("Australian");
   await page.getByRole("button", { name: "Save profile" }).click();
   await expect(page.getByText("Profile saved and TM.7 preview updated.")).toBeVisible();
+  await page.getByRole("button", { name: "TM.7 packet workflow" }).click();
   await expect(async () => {
     expect(await previewFrame.getAttribute("src")).not.toBe(firstPreviewSrc);
   }).toPass();
