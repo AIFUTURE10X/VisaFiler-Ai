@@ -21,6 +21,8 @@ The core idea: store reusable client/profile data once, then generate print-read
 - [Name And Positioning](docs/name-and-positioning.md)
 - [Go-To-Market Notes](docs/go-to-market-notes.md)
 - [Business Evaluation](docs/business-evaluation.md)
+- [Retirement Visa Self-Filing Design](docs/superpowers/specs/2026-05-27-retirement-visa-self-filing-design.md)
+- [Retirement Visa Self-Filing Implementation Plan](docs/superpowers/plans/2026-05-27-retirement-visa-self-filing.md)
 
 ## MVP
 

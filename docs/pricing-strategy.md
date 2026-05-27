@@ -79,6 +79,7 @@ Offer annual billing with two months free.
 Run these early tests before locking the model:
 
 - One-off packet vs 12-month pass for individual expats.
+- Retirement self-filing packet at THB 990 to THB 1,490, anchored against agent packages commonly quoted at 40,000 to 60,000 THB.
 - Watermarked preview vs limited free clean export.
 - Agent pricing by active clients vs generated packets.
 - Whether agents value branded intake links enough to pay for a higher plan.
