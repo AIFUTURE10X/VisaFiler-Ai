@@ -32,12 +32,21 @@ test("creates and approves a TM.7 packet", async ({ page }) => {
   await expect(page.getByRole("heading", { name: "TM.7 packet workflow" })).not.toBeVisible();
   await expect(page.getByText("Agent-fee saver workflow")).toBeVisible();
   await expect(page.getByText("Conversion first, then retirement extension")).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Retirement forms to fill" })).toBeVisible();
+  await expect(page.getByText("TM.86 change of visa form")).toBeVisible();
+  await expect(page.getByText("STM.2 acknowledgement")).toBeVisible();
+  await expect(page.getByText("Overstay penalties acknowledgement")).toBeVisible();
+  await expect(page.getByText("STM.11 verification consent")).toBeVisible();
+  await expect(page.getByText("TM.8 re-entry permit form")).toBeVisible();
   await expect(page.getByText(/40,000/)).toBeVisible();
   await expect(page.getByText(/60,000/)).toBeVisible();
   await page.getByLabel("Current status").selectOption("non_o");
   await page.getByRole("spinbutton", { name: "Age" }).fill("62");
   await page.getByLabel("Financial method").selectOption("bank_deposit");
   await expect(page.getByText("Ready for TM.7 retirement extension")).toBeVisible();
+  await expect(page.getByText("TM.86 change of visa form")).not.toBeVisible();
+  await expect(page.getByText("TM.7 retirement extension form")).toBeVisible();
+  await expect(page.getByText("0/6 required items checked")).toBeVisible();
 
   await page.getByRole("button", { name: "Profile vault" }).click();
   await expect(page.getByRole("heading", { name: "Profile vault" })).toBeVisible();

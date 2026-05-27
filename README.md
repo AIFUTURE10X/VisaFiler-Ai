@@ -47,7 +47,7 @@ Runtime data is stored in `.visafiler-data/`, which is intentionally ignored by 
 
 The TM.7 workflow includes missing-field readiness checks, a customer-friendly supporting-document checklist, print-day checks, and generated PDF preview/download from the bundled official form template. Uploads are optional and only used for document storage or AI extraction.
 
-The retirement self-filing workflow now has its own sidebar console with a first-pass route checker, DIY-vs-agent cost comparison, and checklist-only preparation flow for TM.86/TM.87 conversion, TM.7 retirement extension, and TM.8 re-entry permit planning. Profile and document vaults stay shared across workflows.
+The retirement self-filing workflow now has its own sidebar console with a first-pass route checker, DIY-vs-agent cost comparison, route-specific forms to fill, and checklist-only supporting documents for TM.86/TM.87 conversion, TM.7 retirement extension, STM acknowledgements, and TM.8 re-entry permit planning. Profile and document vaults stay shared across workflows.
 
 ```powershell
 $env:RUN_OPENAI_SMOKE="1"; pnpm smoke:ai

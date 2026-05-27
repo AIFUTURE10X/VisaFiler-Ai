@@ -2,6 +2,7 @@ import { describe, expect, test } from "vitest";
 import {
   getRetirementChecklist,
   getRetirementCostEstimate,
+  getRetirementForms,
   getRetirementRoute
 } from "./retirement";
 
@@ -90,16 +91,61 @@ describe("retirement visa route classifier", () => {
     });
   });
 
-  test("adds multiple re-entry checklist item when requested", () => {
+  test("keeps supporting documents separate from generated forms", () => {
     expect(
       getRetirementChecklist({
         outcome: "tm7_extension",
         reEntryPreference: "multiple",
-        confirmedIds: ["passport", "tm7"]
+        confirmedIds: ["passport"]
       }).summary
     ).toMatchObject({
-      totalRequired: 8,
-      checkedRequired: 2
+      totalRequired: 6,
+      checkedRequired: 1
+    });
+  });
+
+  test("preloads retirement forms separately from supporting documents", () => {
+    const forms = getRetirementForms({
+      outcome: "tm7_extension",
+      currentStatus: "non_o",
+      reEntryPreference: "multiple"
+    });
+
+    expect(forms.map((form) => form.code)).toEqual(["TM.7", "STM.2", "OVERSTAY", "STM.11", "TM.8"]);
+    expect(forms[0]).toMatchObject({
+      title: "TM.7 retirement extension form",
+      fillStatus: "fillable"
+    });
+
+    expect(
+      getRetirementChecklist({
+        outcome: "tm7_extension",
+        reEntryPreference: "multiple"
+      }).items.map((item) => item.label)
+    ).not.toContain("TM.7 retirement extension form");
+  });
+
+  test("preloads the correct conversion form for tourist visa and visa exempt routes", () => {
+    expect(
+      getRetirementForms({
+        outcome: "conversion_then_extension",
+        currentStatus: "tourist_visa",
+        reEntryPreference: "none"
+      })[0]
+    ).toMatchObject({
+      code: "TM.86",
+      title: "TM.86 change of visa form"
+    });
+
+    expect(
+      getRetirementForms({
+        outcome: "conversion_then_extension",
+        currentStatus: "visa_exempt",
+        reEntryPreference: "none"
+      })[0]
+    ).toMatchObject({
+      code: "TM.87",
+      title: "TM.87 non-immigrant visa application"
     });
   });
 });

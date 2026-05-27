@@ -1,6 +1,7 @@
 import type {
   ReEntryPreference,
   RetirementRouteOutcome,
+  RetirementVisaStatus,
   RetirementWorkflowData
 } from "./types";
 
@@ -142,6 +143,104 @@ export function getRetirementCostEstimate(input: RetirementCostEstimateInput): R
   };
 }
 
+export type RetirementFormFillStatus = "fillable" | "template_needed";
+
+export interface RetirementFormItem {
+  id: string;
+  code: string;
+  title: string;
+  description: string;
+  stage: string;
+  fillStatus: RetirementFormFillStatus;
+}
+
+interface RetirementFormsInput {
+  outcome: RetirementRouteOutcome;
+  currentStatus?: RetirementVisaStatus;
+  reEntryPreference?: ReEntryPreference;
+}
+
+const tm7Form: RetirementFormItem = {
+  id: "tm7",
+  code: "TM.7",
+  title: "TM.7 retirement extension form",
+  description: "Uses the verified TM.7 packet engine with retirement extension details.",
+  stage: "Extension",
+  fillStatus: "fillable"
+};
+
+const acknowledgementForms: RetirementFormItem[] = [
+  {
+    id: "stm2",
+    code: "STM.2",
+    title: "STM.2 acknowledgement",
+    description: "Acknowledgement of conditions for permitted continuation of stay.",
+    stage: "Acknowledgement",
+    fillStatus: "template_needed"
+  },
+  {
+    id: "overstay",
+    code: "OVERSTAY",
+    title: "Overstay penalties acknowledgement",
+    description: "Acknowledgement of penalties for a visa overstay.",
+    stage: "Acknowledgement",
+    fillStatus: "template_needed"
+  },
+  {
+    id: "stm11",
+    code: "STM.11",
+    title: "STM.11 verification consent",
+    description: "Consent for immigration to fact-check and verify application information.",
+    stage: "Office dependent",
+    fillStatus: "template_needed"
+  }
+];
+
+export function getRetirementForms(input: RetirementFormsInput): RetirementFormItem[] {
+  if (input.outcome === "not_ready" || input.outcome === "high_risk") {
+    return [];
+  }
+
+  const forms: RetirementFormItem[] = [];
+
+  if (input.outcome === "conversion_then_extension") {
+    forms.push(
+      input.currentStatus === "visa_exempt"
+        ? {
+            id: "tm87",
+            code: "TM.87",
+            title: "TM.87 non-immigrant visa application",
+            description: "Used when the applicant entered Thailand visa-exempt and needs Non-O status first.",
+            stage: "Conversion",
+            fillStatus: "template_needed"
+          }
+        : {
+            id: "tm86",
+            code: "TM.86",
+            title: "TM.86 change of visa form",
+            description: "Used when the applicant has a Tourist or Transit visa and needs Non-O status first.",
+            stage: "Conversion",
+            fillStatus: "template_needed"
+          }
+    );
+  }
+
+  forms.push(tm7Form, ...acknowledgementForms);
+
+  if (input.reEntryPreference === "single" || input.reEntryPreference === "multiple") {
+    forms.push({
+      id: "tm8",
+      code: "TM.8",
+      title: "TM.8 re-entry permit form",
+      description: "Only needed when the applicant wants to leave Thailand and preserve the permission to stay.",
+      stage: "Travel",
+      fillStatus: "template_needed"
+    });
+  }
+
+  return forms;
+}
+
 interface RetirementChecklistInput {
   outcome: RetirementRouteOutcome;
   reEntryPreference?: ReEntryPreference;
@@ -173,23 +272,8 @@ export function getRetirementChecklist(input: RetirementChecklistInput): Retirem
     { id: "photo", label: "4 x 6 cm or 2 inch photo", required: true },
     { id: "address", label: "TM.30 and Thailand address proof", required: true },
     { id: "bank", label: "Bank letter, passbook update, or income evidence", required: true },
-    {
-      id: "tm7",
-      label: "TM.7 retirement extension form",
-      required: input.outcome === "tm7_extension" || input.outcome === "conversion_then_extension"
-    },
-    {
-      id: "tm86-tm87",
-      label: "TM.86 or TM.87 conversion form",
-      required: input.outcome === "conversion_then_extension"
-    },
     { id: "signed-copies", label: "All required copies signed by applicant", required: true },
-    { id: "fee-cash", label: "Official fees prepared in cash", required: true },
-    {
-      id: "tm8",
-      label: "TM.8 re-entry permit form",
-      required: input.reEntryPreference === "single" || input.reEntryPreference === "multiple"
-    }
+    { id: "fee-cash", label: "Official fees prepared in cash", required: true }
   ].filter((item) => item.required);
 
   const checkedRequired = items.filter((item) => confirmed.has(item.id)).length;

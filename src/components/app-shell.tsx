@@ -16,9 +16,11 @@ import { getAiFieldExplanation } from "@/lib/ai";
 import {
   getRetirementChecklist,
   getRetirementCostEstimate,
+  getRetirementForms,
   getRetirementRoute,
   type RetirementChecklist,
   type RetirementCostEstimate,
+  type RetirementFormItem,
   type RetirementRouteResult
 } from "@/lib/retirement";
 import { getTm7DocumentChecklist, getTm7Readiness, type Tm7DocumentChecklist } from "@/lib/tm7";
@@ -157,6 +159,15 @@ export function AppShell({ initialData }: AppShellProps) {
         confirmedIds: retirementWorkflow.checklistConfirmedIds
       }),
     [retirementRoute.outcome, retirementWorkflow.reEntryPreference, retirementWorkflow.checklistConfirmedIds]
+  );
+  const retirementForms = useMemo(
+    () =>
+      getRetirementForms({
+        outcome: retirementRoute.outcome,
+        currentStatus: retirementWorkflow.currentStatus,
+        reEntryPreference: retirementWorkflow.reEntryPreference
+      }),
+    [retirementRoute.outcome, retirementWorkflow.currentStatus, retirementWorkflow.reEntryPreference]
   );
   const latestPacketReady = packet?.status === "ready_for_review" || packet?.status === "approved";
 
@@ -487,9 +498,11 @@ export function AppShell({ initialData }: AppShellProps) {
               workflow={retirementWorkflow}
               route={retirementRoute}
               cost={retirementCost}
+              forms={retirementForms}
               checklist={retirementChecklist}
               onWorkflowChange={setRetirementWorkflow}
               onChecklistToggle={toggleRetirementChecklistItem}
+              onOpenTm7={() => setActiveConsole("tm7")}
             />
           ) : null}
 
@@ -687,16 +700,20 @@ function RetirementPanel({
   workflow,
   route,
   cost,
+  forms,
   checklist,
   onWorkflowChange,
-  onChecklistToggle
+  onChecklistToggle,
+  onOpenTm7
 }: {
   workflow: RetirementWorkflowData;
   route: RetirementRouteResult;
   cost: RetirementCostEstimate;
+  forms: RetirementFormItem[];
   checklist: RetirementChecklist;
   onWorkflowChange: Dispatch<SetStateAction<RetirementWorkflowData>>;
   onChecklistToggle: (id: string, checked: boolean) => void;
+  onOpenTm7: () => void;
 }) {
   const routeStatus = route.canSelfFile ? "Self-fileable" : "Needs attention";
 
@@ -880,6 +897,8 @@ function RetirementPanel({
         </div>
       </div>
 
+      <RetirementFormsPanel forms={forms} onOpenTm7={onOpenTm7} />
+
       <div className="mt-5 border-t border-line pt-5">
         <div className="flex flex-col justify-between gap-2 sm:flex-row sm:items-start">
           <div>
@@ -921,6 +940,69 @@ function RetirementPanel({
         </div>
       </div>
     </section>
+  );
+}
+
+function RetirementFormsPanel({
+  forms,
+  onOpenTm7
+}: {
+  forms: RetirementFormItem[];
+  onOpenTm7: () => void;
+}) {
+  return (
+    <div className="mt-5 border-t border-line pt-5">
+      <div className="flex flex-col justify-between gap-2 sm:flex-row sm:items-start">
+        <div>
+          <h4 className="font-bold">Retirement forms to fill</h4>
+          <p className="text-sm text-muted">{forms.length} route-specific forms loaded</p>
+        </div>
+        <span className="w-fit rounded-full bg-primary-soft px-2 py-1 text-xs font-semibold text-primary">
+          Profile-linked
+        </span>
+      </div>
+
+      {forms.length === 0 ? (
+        <div className="mt-4 rounded-md border border-dashed border-line bg-background p-4 text-sm text-muted">
+          Fix the route blockers before preparing official forms.
+        </div>
+      ) : (
+        <div className="mt-4 grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
+          {forms.map((form) => {
+            const isFillable = form.fillStatus === "fillable";
+            return (
+              <div className="rounded-md border border-line bg-background p-4" key={form.id}>
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="rounded-full bg-primary-soft px-2 py-1 text-xs font-semibold text-primary">
+                    {form.code}
+                  </span>
+                  <span className="rounded-full bg-accent-soft px-2 py-1 text-xs font-semibold text-accent">
+                    {form.stage}
+                  </span>
+                </div>
+                <h5 className="mt-3 font-bold">{form.title}</h5>
+                <p className="mt-1 text-sm text-muted">{form.description}</p>
+                <div className="mt-4">
+                  {isFillable ? (
+                    <button
+                      className="rounded-md border border-primary bg-primary-soft px-3 py-2 text-sm font-semibold text-primary"
+                      type="button"
+                      onClick={onOpenTm7}
+                    >
+                      Open TM.7 workflow
+                    </button>
+                  ) : (
+                    <span className="inline-flex rounded-md border border-line px-3 py-2 text-sm font-semibold text-muted">
+                      Template mapping needed
+                    </span>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
   );
 }
 
