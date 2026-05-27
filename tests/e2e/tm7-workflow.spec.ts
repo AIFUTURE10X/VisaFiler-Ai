@@ -86,6 +86,13 @@ test("creates and approves a TM.7 packet", async ({ page }) => {
   await page.getByRole("button", { name: "Retirement visa" }).click();
   await expect(page.getByTestId("retirement-form-stm2").getByLabel("Applicant name")).toHaveValue("Alex M Morgan");
   await expect(page.getByTestId("retirement-form-tm7").getByLabel("Passport number")).toHaveValue("AB123456");
+  await page.getByRole("button", { name: "Generate retirement packet" }).click();
+  await expect(page.getByText("Retirement packet ready.")).toBeVisible({ timeout: 15000 });
+  await expect(page.getByTitle("Retirement packet preview")).toBeVisible();
+  await expect(page.getByRole("link", { name: "Download retirement packet" })).toHaveAttribute(
+    "href",
+    /\/api\/packets\/.+\/download/
+  );
 
   await page.getByRole("button", { name: "TM.7 packet workflow" }).click();
   await expect(page.getByRole("heading", { name: "TM.7 packet workflow" })).toBeVisible();

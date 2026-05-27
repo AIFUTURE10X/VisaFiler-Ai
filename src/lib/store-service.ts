@@ -1,4 +1,6 @@
 import path from "node:path";
+import { getRetirementRoute } from "./retirement";
+import { generateRetirementPacketPdf, RETIREMENT_PDF_GENERATOR_VERSION } from "./pdf/retirement";
 import { generateTm7Pdf, TM7_PDF_GENERATOR_VERSION } from "./pdf/tm7";
 import { getTm7Readiness } from "./tm7";
 import { readStoredFile, storedFileExists, writeStoredFile } from "./file-storage";
@@ -7,6 +9,7 @@ import {
   type DocumentRecord,
   type DocumentType,
   type FormPacket,
+  type RetirementPacketWorkflowData,
   type Tm7WorkflowData
 } from "./types";
 import { getGeneratedDir, getUploadsDir, LocalStore } from "./local-store";
@@ -165,6 +168,49 @@ export async function createTm7Packet(input: {
   return { packet, missing: readiness.missing };
 }
 
+export async function createRetirementPacket(input: {
+  clientProfileId: string;
+  workflowData: RetirementPacketWorkflowData;
+}): Promise<FormPacket> {
+  const data = await store.read();
+  const profile = data.profiles.find((item) => item.id === input.clientProfileId);
+  if (!profile) {
+    throw new Error("Client profile not found.");
+  }
+
+  const route = getRetirementRoute(input.workflowData.retirementWorkflow);
+  if (!route.canSelfFile) {
+    throw new Error("Retirement packet is not ready for self-filing.");
+  }
+
+  const generated = await generateRetirementPacketPdf({
+    profile,
+    workflowData: input.workflowData,
+    outputDir: getGeneratedDir()
+  });
+  const generatedPdfPath = await saveGeneratedPdf(generated);
+  const now = new Date().toISOString();
+  const packet: FormPacket = {
+    id: crypto.randomUUID(),
+    clientProfileId: profile.id,
+    templateCode: "RETIREMENT",
+    status: "ready_for_review",
+    workflowData: input.workflowData,
+    generatedPdfPath,
+    generatedWith: RETIREMENT_PDF_GENERATOR_VERSION,
+    generatedFromProfileUpdatedAt: profile.updatedAt,
+    createdAt: now,
+    updatedAt: now
+  };
+
+  await store.update((current) => ({
+    ...current,
+    packets: [packet, ...current.packets]
+  }));
+
+  return packet;
+}
+
 export async function getPacket(id: string): Promise<FormPacket | null> {
   const data = await store.read();
   return data.packets.find((packet) => packet.id === id) ?? null;
@@ -178,6 +224,9 @@ export async function ensureTm7PacketPdf(id: string): Promise<FormPacket> {
     const packet = data.packets.find((item) => item.id === id);
     if (!packet) {
       throw new Error("Packet not found.");
+    }
+    if (packet.templateCode !== "TM7") {
+      throw new Error("Packet is not a TM.7 packet.");
     }
 
     const profile = data.profiles.find((item) => item.id === packet.clientProfileId);
@@ -197,14 +246,15 @@ export async function ensureTm7PacketPdf(id: string): Promise<FormPacket> {
       return data;
     }
 
-    const readiness = getTm7Readiness(profile, packet.workflowData);
+    const workflowData = packet.workflowData as Tm7WorkflowData;
+    const readiness = getTm7Readiness(profile, workflowData);
     if (readiness.status !== "ready_for_review") {
       throw new Error("TM.7 packet is missing required information.");
     }
 
     const generated = await generateTm7Pdf({
       profile,
-      workflow: packet.workflowData,
+      workflow: workflowData,
       outputDir: getGeneratedDir()
     });
     const generatedPdfPath = await saveGeneratedPdf(generated);
@@ -230,7 +280,90 @@ export async function ensureTm7PacketPdf(id: string): Promise<FormPacket> {
   return ensured;
 }
 
-async function saveGeneratedPdf(generated: Awaited<ReturnType<typeof generateTm7Pdf>>): Promise<string> {
+export async function ensurePacketPdf(id: string): Promise<FormPacket> {
+  const packet = await getPacket(id);
+  if (!packet) {
+    throw new Error("Packet not found.");
+  }
+
+  if (packet.templateCode === "TM7") {
+    return ensureTm7PacketPdf(id);
+  }
+
+  return ensureRetirementPacketPdf(id);
+}
+
+async function ensureRetirementPacketPdf(id: string): Promise<FormPacket> {
+  let ensured: FormPacket | null = null;
+  const now = new Date().toISOString();
+
+  await store.update(async (data) => {
+    const packet = data.packets.find((item) => item.id === id);
+    if (!packet) {
+      throw new Error("Packet not found.");
+    }
+    if (packet.templateCode !== "RETIREMENT") {
+      throw new Error("Packet is not a retirement packet.");
+    }
+
+    const profile = data.profiles.find((item) => item.id === packet.clientProfileId);
+    if (!profile) {
+      throw new Error("Client profile not found.");
+    }
+
+    const currentPdfExists = packet.generatedPdfPath ? await storedFileExists(packet.generatedPdfPath) : false;
+    const needsRegeneration =
+      packet.generatedWith !== RETIREMENT_PDF_GENERATOR_VERSION ||
+      packet.generatedFromProfileUpdatedAt !== profile.updatedAt ||
+      !packet.generatedPdfPath ||
+      !currentPdfExists;
+
+    if (!needsRegeneration) {
+      ensured = packet;
+      return data;
+    }
+
+    const workflowData = packet.workflowData as RetirementPacketWorkflowData;
+    const route = getRetirementRoute(workflowData.retirementWorkflow);
+    if (!route.canSelfFile) {
+      throw new Error("Retirement packet is not ready for self-filing.");
+    }
+
+    const generated = await generateRetirementPacketPdf({
+      profile,
+      workflowData,
+      outputDir: getGeneratedDir()
+    });
+    const generatedPdfPath = await saveGeneratedPdf(generated);
+    const regeneratedPacket: FormPacket = {
+      ...packet,
+      generatedPdfPath,
+      generatedWith: RETIREMENT_PDF_GENERATOR_VERSION,
+      generatedFromProfileUpdatedAt: profile.updatedAt,
+      updatedAt: now
+    };
+
+    ensured = regeneratedPacket;
+    return {
+      ...data,
+      packets: data.packets.map((item) => (item.id === packet.id ? regeneratedPacket : item))
+    };
+  });
+
+  if (!ensured) {
+    throw new Error("Packet not found.");
+  }
+
+  return ensured;
+}
+
+interface GeneratedPdf {
+  bytes: Uint8Array;
+  fileName: string;
+  path: string;
+}
+
+async function saveGeneratedPdf(generated: GeneratedPdf): Promise<string> {
   return writeStoredFile({
     localPath: generated.path,
     blobPathname: `generated/${generated.fileName}`,

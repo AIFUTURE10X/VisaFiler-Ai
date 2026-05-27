@@ -16,16 +16,25 @@ import { getAiFieldExplanation } from "@/lib/ai";
 import {
   getRetirementChecklist,
   getRetirementCostEstimate,
+  getRetirementFormDraftKey,
   getRetirementForms,
   getRetirementRoute,
+  resolveRetirementFormFieldValue,
   type RetirementChecklist,
   type RetirementCostEstimate,
-  type RetirementFormField,
   type RetirementFormItem,
   type RetirementRouteResult
 } from "@/lib/retirement";
 import { getTm7DocumentChecklist, getTm7Readiness, type Tm7DocumentChecklist } from "@/lib/tm7";
-import type { AppData, ClientProfile, DocumentRecord, FormPacket, RetirementWorkflowData, Tm7WorkflowData } from "@/lib/types";
+import type {
+  AppData,
+  ClientProfile,
+  DocumentRecord,
+  FormPacket,
+  RetirementPacketWorkflowData,
+  RetirementWorkflowData,
+  Tm7WorkflowData
+} from "@/lib/types";
 
 interface AppShellProps {
   initialData: AppData;
@@ -110,12 +119,18 @@ const profileFields: Array<{
 ];
 
 export function AppShell({ initialData }: AppShellProps) {
+  const initialTm7Packet = initialData.packets.find((item) => item.templateCode === "TM7");
+  const initialRetirementPacket = initialData.packets.find((item) => item.templateCode === "RETIREMENT");
+  const initialRetirementWorkflowData = initialRetirementPacket?.workflowData as
+    | RetirementPacketWorkflowData
+    | undefined;
   const [activeConsole, setActiveConsole] = useState<ActiveConsole>("tm7");
   const [profile, setProfile] = useState<ClientProfile>(initialData.profiles[0] ?? blankProfile());
   const [documents, setDocuments] = useState<DocumentRecord[]>(initialData.documents);
-  const [packet, setPacket] = useState<FormPacket | null>(initialData.packets[0] ?? null);
+  const [packet, setPacket] = useState<FormPacket | null>(initialTm7Packet ?? null);
+  const [retirementPacket, setRetirementPacket] = useState<FormPacket | null>(initialRetirementPacket ?? null);
   const [workflow, setWorkflow] = useState<Tm7WorkflowData>(
-    initialData.packets[0]?.workflowData ?? {
+    (initialTm7Packet?.workflowData as Tm7WorkflowData | undefined) ?? {
       writtenAt: "",
       applicationDate: "",
       extensionReason: "",
@@ -124,18 +139,22 @@ export function AppShell({ initialData }: AppShellProps) {
     }
   );
   const [documentType, setDocumentType] = useState("passport");
-  const [retirementWorkflow, setRetirementWorkflow] = useState<RetirementWorkflowData>({
-    age: 50,
-    currentStatus: "tourist_visa",
-    currentStayUntil: defaultStayUntil(),
-    hasOverstay: false,
-    hasThaiBankAccount: true,
-    financialMethod: "bank_deposit",
-    reEntryPreference: "multiple",
-    immigrationOfficeProvince: profile.province || "Phuket",
-    checklistConfirmedIds: []
-  });
-  const [retirementFormDrafts, setRetirementFormDrafts] = useState<Record<string, string>>({});
+  const [retirementWorkflow, setRetirementWorkflow] = useState<RetirementWorkflowData>(
+    initialRetirementWorkflowData?.retirementWorkflow ?? {
+      age: 50,
+      currentStatus: "tourist_visa",
+      currentStayUntil: defaultStayUntil(),
+      hasOverstay: false,
+      hasThaiBankAccount: true,
+      financialMethod: "bank_deposit",
+      reEntryPreference: "multiple",
+      immigrationOfficeProvince: profile.province || "Phuket",
+      checklistConfirmedIds: []
+    }
+  );
+  const [retirementFormDrafts, setRetirementFormDrafts] = useState<Record<string, string>>(
+    initialRetirementWorkflowData?.formDrafts ?? {}
+  );
   const [busy, setBusy] = useState<string | null>(null);
   const [message, setMessage] = useState("Ready to build a TM.7 packet.");
 
@@ -301,8 +320,34 @@ export function AppShell({ initialData }: AppShellProps) {
   function updateRetirementFormDraft(formId: string, fieldId: string, value: string) {
     setRetirementFormDrafts((current) => ({
       ...current,
-      [`${formId}.${fieldId}`]: value
+      [getRetirementFormDraftKey(formId, fieldId)]: value
     }));
+  }
+
+  async function generateRetirementPacket() {
+    setBusy("retirement-packet");
+    setMessage("Generating retirement packet...");
+    const savedProfile = await saveDraftProfile();
+    const response = await fetch("/api/packets/retirement", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        clientProfileId: savedProfile.id,
+        workflowData: {
+          retirementWorkflow,
+          formDrafts: retirementFormDrafts
+        }
+      })
+    });
+    const result = (await response.json()) as { packet: FormPacket; error?: string };
+    if (!response.ok) {
+      setMessage(result.error ?? "Could not generate the retirement packet.");
+      setBusy(null);
+      return;
+    }
+    setRetirementPacket(result.packet);
+    setMessage("Retirement packet ready.");
+    setBusy(null);
   }
 
   async function extractDocument(document: DocumentRecord) {
@@ -511,9 +556,12 @@ export function AppShell({ initialData }: AppShellProps) {
               profile={profile}
               checklist={retirementChecklist}
               formDrafts={retirementFormDrafts}
+              packet={retirementPacket}
+              busy={busy}
               onWorkflowChange={setRetirementWorkflow}
               onFormDraftChange={updateRetirementFormDraft}
               onChecklistToggle={toggleRetirementChecklistItem}
+              onGeneratePacket={generateRetirementPacket}
               onOpenTm7={() => setActiveConsole("tm7")}
             />
           ) : null}
@@ -716,9 +764,12 @@ function RetirementPanel({
   profile,
   checklist,
   formDrafts,
+  packet,
+  busy,
   onWorkflowChange,
   onFormDraftChange,
   onChecklistToggle,
+  onGeneratePacket,
   onOpenTm7
 }: {
   workflow: RetirementWorkflowData;
@@ -728,12 +779,16 @@ function RetirementPanel({
   profile: ClientProfile;
   checklist: RetirementChecklist;
   formDrafts: Record<string, string>;
+  packet: FormPacket | null;
+  busy: string | null;
   onWorkflowChange: Dispatch<SetStateAction<RetirementWorkflowData>>;
   onFormDraftChange: (formId: string, fieldId: string, value: string) => void;
   onChecklistToggle: (id: string, checked: boolean) => void;
+  onGeneratePacket: () => void;
   onOpenTm7: () => void;
 }) {
   const routeStatus = route.canSelfFile ? "Self-fileable" : "Needs attention";
+  const isGeneratingPacket = busy === "retirement-packet";
 
   return (
     <section id="retirement" className="rounded-md border border-line bg-surface p-5 shadow-soft">
@@ -925,6 +980,54 @@ function RetirementPanel({
       />
 
       <div className="mt-5 border-t border-line pt-5">
+        <div className="rounded-md border border-line bg-background p-4">
+          <div className="flex flex-col justify-between gap-3 md:flex-row md:items-start">
+            <div>
+              <h4 className="font-bold">Retirement packet PDF</h4>
+              <p className="mt-1 text-sm text-muted">
+                Generate one printable packet from the route forms, saved profile, and checklist.
+              </p>
+              <p className="mt-2 text-sm font-semibold text-primary">
+                {packet?.generatedPdfPath ? "Retirement packet ready." : "No retirement packet generated yet."}
+              </p>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <button
+                className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 font-semibold text-white hover:bg-primary-hover disabled:bg-muted"
+                type="button"
+                onClick={onGeneratePacket}
+                disabled={!route.canSelfFile || busy !== null}
+              >
+                {isGeneratingPacket ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <FileCheck2 className="h-4 w-4" />
+                )}
+                Generate retirement packet
+              </button>
+              {packet?.generatedPdfPath ? (
+                <a
+                  className="inline-flex items-center gap-2 rounded-md border border-primary bg-primary-soft px-4 py-2 font-semibold text-primary"
+                  href={`/api/packets/${packet.id}/download`}
+                >
+                  <Download className="h-4 w-4" />
+                  Download retirement packet
+                </a>
+              ) : null}
+            </div>
+          </div>
+
+          {packet?.generatedPdfPath ? (
+            <iframe
+              className="mt-4 h-[720px] w-full rounded-md border border-line bg-white"
+              title="Retirement packet preview"
+              src={`/api/packets/${packet.id}/preview?v=${encodeURIComponent(packet.updatedAt)}`}
+            />
+          ) : null}
+        </div>
+      </div>
+
+      <div className="mt-5 border-t border-line pt-5">
         <div className="flex flex-col justify-between gap-2 sm:flex-row sm:items-start">
           <div>
             <h4 className="font-bold">Retirement document checklist</h4>
@@ -1047,7 +1150,13 @@ function RetirementFormsPanel({
                       <input
                         className="mt-1 w-full rounded-md border-line bg-white"
                         type={field.inputType ?? "text"}
-                        value={getRetirementFormFieldValue(form.id, field, profile, workflow, formDrafts)}
+                        value={resolveRetirementFormFieldValue({
+                          formId: form.id,
+                          field,
+                          profile,
+                          workflow,
+                          drafts: formDrafts
+                        })}
                         placeholder={field.defaultValue}
                         onChange={(event) => onFieldChange(form.id, field.id, event.target.value)}
                       />
@@ -1061,57 +1170,6 @@ function RetirementFormsPanel({
       )}
     </div>
   );
-}
-
-function getRetirementFormFieldValue(
-  formId: string,
-  field: RetirementFormField,
-  profile: ClientProfile,
-  workflow: RetirementWorkflowData,
-  drafts: Record<string, string>
-) {
-  const draftKey = `${formId}.${field.id}`;
-  if (drafts[draftKey] !== undefined) {
-    return drafts[draftKey];
-  }
-
-  if (field.source === "profile" && field.profileKey) {
-    return String(profile[field.profileKey] ?? "");
-  }
-
-  if (field.source === "workflow" && field.workflowKey) {
-    return formatWorkflowFieldValue(workflow[field.workflowKey]);
-  }
-
-  if (field.source === "computed") {
-    if (field.computedKey === "fullName") {
-      return [profile.legalFirstName, profile.legalMiddleName, profile.legalFamilyName].filter(Boolean).join(" ");
-    }
-
-    if (field.computedKey === "thaiAddress") {
-      return [
-        profile.thaiAddressNumber,
-        profile.thaiAddressLine,
-        profile.road,
-        profile.subDistrict,
-        profile.district,
-        profile.province,
-        profile.postCode
-      ]
-        .filter(Boolean)
-        .join(", ");
-    }
-  }
-
-  return field.defaultValue ?? "";
-}
-
-function formatWorkflowFieldValue(value: RetirementWorkflowData[keyof RetirementWorkflowData]) {
-  if (value === undefined || value === null) return "";
-  if (typeof value === "boolean") return value ? "Yes" : "No";
-  if (typeof value === "number") return String(value);
-  if (Array.isArray(value)) return value.join(", ");
-  return value.replaceAll("_", " ");
 }
 
 function Field({

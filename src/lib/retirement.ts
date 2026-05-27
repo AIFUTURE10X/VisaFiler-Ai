@@ -169,6 +169,8 @@ export interface RetirementFormItem {
   fields: RetirementFormField[];
 }
 
+export type RetirementFormDrafts = Record<string, string>;
+
 interface RetirementFormsInput {
   outcome: RetirementRouteOutcome;
   currentStatus?: RetirementVisaStatus;
@@ -369,6 +371,69 @@ export function getRetirementForms(input: RetirementFormsInput): RetirementFormI
   }
 
   return forms;
+}
+
+export function getRetirementFormDraftKey(formId: string, fieldId: string): string {
+  return `${formId}.${fieldId}`;
+}
+
+export function resolveRetirementFormFieldValue(input: {
+  formId: string;
+  field: RetirementFormField;
+  profile: ClientProfile;
+  workflow: RetirementWorkflowData;
+  drafts?: RetirementFormDrafts;
+}): string {
+  const draftKey = getRetirementFormDraftKey(input.formId, input.field.id);
+  if (input.drafts?.[draftKey] !== undefined) {
+    return input.drafts[draftKey];
+  }
+
+  if (input.field.source === "profile" && input.field.profileKey) {
+    return String(input.profile[input.field.profileKey] ?? "");
+  }
+
+  if (input.field.source === "workflow" && input.field.workflowKey) {
+    return formatRetirementWorkflowFieldValue(input.workflow[input.field.workflowKey]);
+  }
+
+  if (input.field.source === "computed") {
+    if (input.field.computedKey === "fullName") {
+      return getRetirementApplicantName(input.profile);
+    }
+
+    if (input.field.computedKey === "thaiAddress") {
+      return getRetirementThailandAddress(input.profile);
+    }
+  }
+
+  return input.field.defaultValue ?? "";
+}
+
+export function getRetirementApplicantName(profile: ClientProfile): string {
+  return [profile.legalFirstName, profile.legalMiddleName, profile.legalFamilyName].filter(Boolean).join(" ");
+}
+
+export function getRetirementThailandAddress(profile: ClientProfile): string {
+  return [
+    profile.thaiAddressNumber,
+    profile.thaiAddressLine,
+    profile.road,
+    profile.subDistrict,
+    profile.district,
+    profile.province,
+    profile.postCode
+  ]
+    .filter(Boolean)
+    .join(", ");
+}
+
+export function formatRetirementWorkflowFieldValue(value: RetirementWorkflowData[keyof RetirementWorkflowData]) {
+  if (value === undefined || value === null) return "";
+  if (typeof value === "boolean") return value ? "Yes" : "No";
+  if (typeof value === "number") return String(value);
+  if (Array.isArray(value)) return value.join(", ");
+  return value.replaceAll("_", " ");
 }
 
 interface RetirementChecklistInput {

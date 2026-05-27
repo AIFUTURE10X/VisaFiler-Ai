@@ -80,6 +80,11 @@ export interface RetirementWorkflowData {
   checklistConfirmedIds?: string[];
 }
 
+export interface RetirementPacketWorkflowData {
+  retirementWorkflow: RetirementWorkflowData;
+  formDrafts?: Record<string, string>;
+}
+
 export interface MissingField {
   key: keyof ClientProfile | keyof Tm7WorkflowData | string;
   label: string;
@@ -113,9 +118,9 @@ export type DocumentType =
 export interface FormPacket {
   id: string;
   clientProfileId: string;
-  templateCode: "TM7";
+  templateCode: "TM7" | "RETIREMENT";
   status: PacketStatus;
-  workflowData: Tm7WorkflowData;
+  workflowData: Tm7WorkflowData | RetirementPacketWorkflowData;
   generatedPdfPath?: string;
   generatedWith?: string;
   generatedFromProfileUpdatedAt?: string;

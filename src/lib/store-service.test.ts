@@ -4,7 +4,7 @@ import { tmpdir } from "node:os";
 import { afterEach, describe, expect, test, vi } from "vitest";
 import { getDocument } from "pdfjs-dist/legacy/build/pdf.mjs";
 import { LocalStore } from "./local-store";
-import type { ClientProfile, Tm7WorkflowData } from "./types";
+import type { ClientProfile, RetirementPacketWorkflowData, Tm7WorkflowData } from "./types";
 
 let tempDirs: string[] = [];
 const previousVisafilerDataDir = process.env.VISAFILER_DATA_DIR;
@@ -58,6 +58,24 @@ const workflow: Tm7WorkflowData = {
   applicationDate: "2026-05-25",
   extensionReason: "Retirement extension",
   requestedExtensionDays: 365
+};
+
+const retirementWorkflowData: RetirementPacketWorkflowData = {
+  retirementWorkflow: {
+    age: 60,
+    currentStatus: "non_o",
+    currentStayUntil: "2026-07-15",
+    hasOverstay: false,
+    hasThaiBankAccount: true,
+    financialMethod: "bank_deposit",
+    reEntryPreference: "multiple",
+    immigrationOfficeProvince: "Phuket",
+    checklistConfirmedIds: ["passport", "photo", "address", "bank", "signed-copies", "fee-cash"]
+  },
+  formDrafts: {
+    "stm2.stay-reason": "Retirement extension",
+    "tm8.travel-destination": "Singapore"
+  }
 };
 
 describe("store service packet PDFs", () => {
@@ -133,6 +151,41 @@ describe("store service packet PDFs", () => {
     expect(servedPacket.generatedFromProfileUpdatedAt).toBe(updatedProfile.updatedAt);
     expect(text).toContain("Australian");
     expect(text).not.toContain("Canadian");
+  });
+
+  test("creates and serves retirement packet PDFs from the stored profile and retirement drafts", async () => {
+    const dir = await mkdtemp(path.join(tmpdir(), "visafiler-store-service-"));
+    tempDirs.push(dir);
+    process.env.VISAFILER_DATA_DIR = dir;
+    vi.resetModules();
+
+    const store = new LocalStore(dir);
+    await store.write({
+      profiles: [completeProfile],
+      documents: [],
+      packets: []
+    });
+
+    const { createRetirementPacket, ensurePacketPdf } = await import("./store-service");
+    const packet = await createRetirementPacket({
+      clientProfileId: completeProfile.id,
+      workflowData: retirementWorkflowData
+    });
+
+    expect(packet.templateCode).toBe("RETIREMENT");
+    expect(packet.generatedPdfPath).toBeDefined();
+    expect(packet.generatedWith).toBe("retirement-packet-draft-v1");
+
+    const servedPacket = await ensurePacketPdf(packet.id);
+    const bytes = await readFile(servedPacket.generatedPdfPath as string);
+    const text = await extractPdfText(new Uint8Array(bytes));
+
+    expect(text).toContain("Retirement visa self-filing packet");
+    expect(text).toContain("TM.7 retirement extension form");
+    expect(text).toContain("STM.2 acknowledgement");
+    expect(text).toContain("Alex Morgan");
+    expect(text).toContain("Canadian");
+    expect(text).toContain("Singapore");
   });
 });
 
