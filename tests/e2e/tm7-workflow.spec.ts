@@ -58,7 +58,16 @@ test("creates and approves a TM.7 packet", async ({ page }) => {
   await page.getByRole("button", { name: "Generate preview" }).click();
 
   await expect(page.locator("span", { hasText: "Ready for review" })).toBeVisible();
-  await expect(page.getByTitle("Preview generated PDF")).toBeVisible();
+  const previewFrame = page.getByTitle("Preview generated PDF");
+  await expect(previewFrame).toBeVisible();
+  const firstPreviewSrc = await previewFrame.getAttribute("src");
+
+  await page.getByLabel("Nationality").fill("Australian");
+  await page.getByRole("button", { name: "Save profile" }).click();
+  await expect(page.getByText("Profile saved and TM.7 preview updated.")).toBeVisible();
+  await expect(async () => {
+    expect(await previewFrame.getAttribute("src")).not.toBe(firstPreviewSrc);
+  }).toPass();
 
   await page.getByRole("button", { name: "Approve packet" }).click();
 

@@ -152,6 +152,7 @@ export async function createTm7Packet(input: {
     workflowData: input.workflowData,
     generatedPdfPath,
     generatedWith,
+    generatedFromProfileUpdatedAt: generatedPdfPath ? profile.updatedAt : undefined,
     createdAt: now,
     updatedAt: now
   };
@@ -186,7 +187,10 @@ export async function ensureTm7PacketPdf(id: string): Promise<FormPacket> {
 
     const currentPdfExists = packet.generatedPdfPath ? await storedFileExists(packet.generatedPdfPath) : false;
     const needsRegeneration =
-      packet.generatedWith !== TM7_PDF_GENERATOR_VERSION || !packet.generatedPdfPath || !currentPdfExists;
+      packet.generatedWith !== TM7_PDF_GENERATOR_VERSION ||
+      packet.generatedFromProfileUpdatedAt !== profile.updatedAt ||
+      !packet.generatedPdfPath ||
+      !currentPdfExists;
 
     if (!needsRegeneration) {
       ensured = packet;
@@ -208,6 +212,7 @@ export async function ensureTm7PacketPdf(id: string): Promise<FormPacket> {
       ...packet,
       generatedPdfPath,
       generatedWith: TM7_PDF_GENERATOR_VERSION,
+      generatedFromProfileUpdatedAt: profile.updatedAt,
       updatedAt: now
     };
 

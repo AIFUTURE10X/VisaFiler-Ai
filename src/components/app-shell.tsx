@@ -117,6 +117,27 @@ export function AppShell({ initialData }: AppShellProps) {
     });
     const saved = (await response.json()) as ClientProfile;
     setProfile(saved);
+
+    const savedReadiness = getTm7Readiness(saved, workflow);
+    if (packet && savedReadiness.status === "ready_for_review") {
+      setMessage("Profile saved. Updating TM.7 preview...");
+      const previewResponse = await fetch("/api/packets/tm7", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ clientProfileId: saved.id, workflowData: workflow })
+      });
+      const result = (await previewResponse.json()) as { packet: FormPacket; error?: string };
+      if (!previewResponse.ok) {
+        setMessage(result.error ?? "Profile saved. Could not update the TM.7 preview.");
+        setBusy(null);
+        return;
+      }
+      setPacket(result.packet);
+      setMessage("Profile saved and TM.7 preview updated.");
+      setBusy(null);
+      return;
+    }
+
     setMessage("Profile saved.");
     setBusy(null);
   }

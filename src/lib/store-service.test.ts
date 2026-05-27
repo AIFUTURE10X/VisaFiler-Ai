@@ -2,6 +2,7 @@ import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { tmpdir } from "node:os";
 import { afterEach, describe, expect, test, vi } from "vitest";
+import { getDocument } from "pdfjs-dist/legacy/build/pdf.mjs";
 import { LocalStore } from "./local-store";
 import type { ClientProfile, Tm7WorkflowData } from "./types";
 
@@ -95,4 +96,69 @@ describe("store service packet PDFs", () => {
     expect(servedPacket.generatedWith).toBe("tm7-pdf-gregorian-years-v1");
     expect((await readFile(stalePath)).byteLength).toBeGreaterThan(10_000);
   });
+
+  test("regenerates TM.7 PDFs when the saved profile changes", async () => {
+    const dir = await mkdtemp(path.join(tmpdir(), "visafiler-store-service-"));
+    tempDirs.push(dir);
+    process.env.VISAFILER_DATA_DIR = dir;
+    vi.resetModules();
+
+    const store = new LocalStore(dir);
+    await store.write({
+      profiles: [completeProfile],
+      documents: [],
+      packets: []
+    });
+
+    const { createTm7Packet, ensureTm7PacketPdf } = await import("./store-service");
+    const { packet } = await createTm7Packet({
+      clientProfileId: completeProfile.id,
+      workflowData: workflow
+    });
+
+    const updatedProfile = {
+      ...completeProfile,
+      nationality: "Australian",
+      updatedAt: "2026-05-27T05:30:00.000Z"
+    };
+    await store.update((data) => ({
+      ...data,
+      profiles: [updatedProfile]
+    }));
+
+    const servedPacket = await ensureTm7PacketPdf(packet.id);
+    const bytes = await readFile(servedPacket.generatedPdfPath as string);
+    const text = await extractPdfText(new Uint8Array(bytes));
+
+    expect(servedPacket.generatedFromProfileUpdatedAt).toBe(updatedProfile.updatedAt);
+    expect(text).toContain("Australian");
+    expect(text).not.toContain("Canadian");
+  });
 });
+
+async function extractPdfText(bytes: Uint8Array): Promise<string> {
+  const originalWarn = console.warn;
+  const warnSpy = vi.spyOn(console, "warn").mockImplementation((message?: unknown, ...args) => {
+    if (String(message).includes("standardFontDataUrl")) return;
+    originalWarn(message, ...args);
+  });
+
+  try {
+    const pdf = await getDocument({
+      data: bytes.slice(),
+      useWorkerFetch: false,
+      isEvalSupported: false
+    }).promise;
+    const pageTexts: string[] = [];
+
+    for (let index = 1; index <= pdf.numPages; index += 1) {
+      const page = await pdf.getPage(index);
+      const textContent = await page.getTextContent();
+      pageTexts.push(textContent.items.map((item) => ("str" in item ? item.str : "")).join(" "));
+    }
+
+    return pageTexts.join("\n");
+  } finally {
+    warnSpy.mockRestore();
+  }
+}

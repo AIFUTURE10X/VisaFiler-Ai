@@ -84,6 +84,7 @@ export interface FormPacket {
   workflowData: Tm7WorkflowData;
   generatedPdfPath?: string;
   generatedWith?: string;
+  generatedFromProfileUpdatedAt?: string;
   approvedAt?: string;
   exportedAt?: string;
   createdAt: string;
