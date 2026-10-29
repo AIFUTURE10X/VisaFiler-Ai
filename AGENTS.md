@@ -5,11 +5,11 @@ remember the history for this project
 ## AI OS link
 
 Part of Phil's AI OS — registry slug: `visafiler` (project id 41).
-- Status and next action live in the registry row, not in this file. On Phil's PC:
-  `node C:/Projects/ai-os-system/scripts/db.mjs query "select status, next_action from projects where slug='visafiler'"`
-  When the next action changes, update that row and set `last_activity_at = now()`.
-- Work state (tasks, findings, decisions) goes to the ai-os Neon DB with `project_id = 41`; notable work
-  to the journal: `node C:/Projects/ai-os-system/scripts/log.mjs "<entry>" --tags visafiler`.
+- Status and next action live in the registry row, not in this file. On Phil's PC, from any folder:
+  `node C:/Projects/ai-os-system/scripts/project.mjs show visafiler`
+  When the next action changes: `node C:/Projects/ai-os-system/scripts/project.mjs next visafiler "<text>"`.
+- Notable work goes to the AI OS journal: `node C:/Projects/ai-os-system/scripts/project.mjs log visafiler "<entry>"`.
+  Tasks, findings and decisions go to the ai-os Neon DB with `project_id = 41`.
 - Durable learnings go in this file or the OS vault.
 
 - how do I do USE THIS for the MD?
